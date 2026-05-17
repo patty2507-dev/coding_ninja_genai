@@ -1,0 +1,2 @@
+email_id,category,urgency,confidence,routed_to,drafted_response,audit_trail
+3,Feature Request,High,66.66666666666666,product@company.com,,[]
