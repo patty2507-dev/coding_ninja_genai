@@ -1,0 +1,97 @@
+from dotenv import load_dotenv
+load_dotenv()
+
+import json
+import hashlib
+from datetime import datetime
+from pathlib import Path
+from langchain_community.document_loaders import PyPDFLoader
+from langchain_text_splitters import RecursiveCharacterTextSplitter
+from langchain_openai import OpenAIEmbeddings
+
+from langchain_chroma import Chroma
+
+PDF_FOLDER = './bajaj_pdfs'
+CHROMA_DIR = './bajajbot_chroma_db'
+COLLECTION_NAME = 'bajaj_policy'
+LOG_FILE ="./processed_files.json"
+
+CHUNK_SIZE = 500
+CHUNK_OVERLAP = 0
+
+
+def get_chunk_hash(text):
+    return hashlib.md5(text.strip().encode()).hexdigest()
+
+
+
+
+def load_and_chunk(filepath):
+    loader = PyPDFLoader(filepath)
+    docs = loader.load()
+    splitter = RecursiveCharacterTextSplitter(chunk_size=CHUNK_SIZE, chunk_overlap=CHUNK_OVERLAP)
+    chunks = splitter.split_documents(docs)
+    for chunk in chunks:
+        chunk.metadata['source'] = Path(filepath).name 
+        chunk.metadata["ingested_on"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        chunk.metadata["chunk_hash"] = get_chunk_hash(chunk.page_content)
+
+    return chunks
+
+
+def get_existing_hashes(vectorstore:Chroma):
+    existing = vectorstore.get(include=["metadatas"])
+    hashes = set()
+    for metadata in existing["metadatas"]:
+        if metadata and "chunk_hash" in metadata:
+            hashes.add(metadata["chunk_hash"])
+
+    return hashes
+
+
+def run_pipeline():
+
+    # Path(PDF_FOLDER).mkdir(exist_ok=True)
+    embedding_model = OpenAIEmbeddings(model="text-embedding-3-small")
+    vectorstore = Chroma(collection_name=COLLECTION_NAME, 
+                         embedding_function=embedding_model,
+                           persist_directory=CHROMA_DIR)
+    
+    print("Chroma DB loaded:",vectorstore._collection.count())
+    existing_hashes = get_existing_hashes(vectorstore)
+    print("Existing hashes:", len(existing_hashes))
+
+    pdf_files = list(Path(PDF_FOLDER).glob("*.pdf"))
+    print("PDF files found:", pdf_files)
+
+    if not pdf_files:
+        print("  No PDFs found. Drop PDFs into the folder and run again.")
+        return
+    for pdf_path in pdf_files:
+        chunks = load_and_chunk(pdf_path)
+        for chunk in chunks:
+            if chunk.metadata["chunk_hash"] not in existing_hashes:
+                print("I am inside hash for new chunks")
+                vectorstore.add_documents([chunk])
+                existing_hashes.add(chunk.metadata["chunk_hash"])
+            print('duplicate chunks')
+
+    print("Chroma DB updated:",vectorstore._collection.count())
+
+
+
+run_pipeline()
+
+
+
+
+
+
+
+
+
+
+# text= "emi is 3500 per month"
+# text_1= "emi is 5000 per month"
+# print(get_chunk_hash(text))
+# print(get_chunk_hash(text_1))
