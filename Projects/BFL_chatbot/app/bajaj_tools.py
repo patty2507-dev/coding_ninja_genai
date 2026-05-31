@@ -37,7 +37,7 @@ def get_loan_status(loan_id: str) -> dict:
         "loan_type":         loan["loan_type"],
         "emi_amount":        loan["emi"],
         "remaining_months":  loan["remaining_months"],
-        "outstanding_balance": loan["outstanding"],
+        "outstanding_balance": loan["outstanding_balance"],
         "next_due_date":     loan["next_due_date"],
         "interest_rate":     loan["interest_rate"],
         "total_tenure":      loan["tenure_months"],
@@ -70,7 +70,7 @@ def get_emi_schedule(loan_id: str) -> dict:
         year  = next_due.year + (next_due.month + i - 1) // 12
         due_date = date(year, month, next_due.day)
         schedule.append({
-            "installment_no": loan["emi_paid"] + i + 1,
+            "installment_no": loan["paid_months"] + i + 1,
             "due_date":       str(due_date),
             "amount":         emi,
         })
@@ -112,7 +112,7 @@ def calculate_prepayment(loan_id: str, prepay_amount: float) -> dict:
         }
 
     # 4% penalty if paid within first 3 years, 2% after
-    charge_pct    = 4.0 if loan["emi_paid"] < 36 else 2.0
+    charge_pct    = 4.0 if loan["paid_months"] < 36 else 2.0
     penalty       = prepay_amount * charge_pct / 100
     interest_saved = prepay_amount * (rate / 12 / 100) * remaining
 

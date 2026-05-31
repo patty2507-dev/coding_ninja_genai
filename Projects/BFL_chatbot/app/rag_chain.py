@@ -3,7 +3,8 @@ from langchain_openai import OpenAIEmbeddings, ChatOpenAI
 from langchain_chroma import Chroma
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_core.output_parsers import StrOutputParser
-# from langchain_core.runnables import RannableLamda
+from langchain_core.runnables import RunnableLambda
+
 
 from dotenv import load_dotenv
 load_dotenv()
@@ -62,11 +63,51 @@ POLICY CONTEXT:
 ])
 
 
+def format_context(docs):
+    if not docs:
+        return "I don't have information on this. Please contact Rahul @ 9152091676."
+    return "\n".join([f"## {doc.page_content}" for doc in docs])
 
 
 
-rag_chain = prompt | retreival | llm
+rag_chain = (
+    { "context"     : RunnableLambda(lambda x: x["query"]) | retreival | format_context,
+    "chat_history": RunnableLambda(lambda x: x["chat_history"]),
+    "query"       : RunnableLambda(lambda x: x["query"]),}
+    | prompt
+    | llm
+    | StrOutputParser()
+)
 
+
+def rag_answer(query, chat_history=[]):
+    return rag_chain.invoke({"query": query, "chat_history": chat_history})
+
+
+# result = rag_answer("what is interest rate for personal loan?", [])
+# print(result)
+
+
+# from langchain_core.messages import HumanMessage, AIMessage
+# test_cases = [
+#     {
+#             "query"  : "what is interest rate for personal loan?",
+#             "history": [],
+#     },
+
+#      {
+#             "query"  : "my cibil score is 750, what rate will I get?",
+#             "history": [
+#                 HumanMessage(content="what is interest rate for personal loan?"),
+#                 AIMessage(content="Interest rates range from 11% to 24% based on CIBIL score."),
+#             ],
+#         }
+# ]
+
+
+# for case in test_cases:
+#     print("="*20)
+#     print(rag_answer(case["query"], case["history"]))
 
 
 
