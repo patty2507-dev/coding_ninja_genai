@@ -7,13 +7,13 @@ from pydantic import BaseModel
 from typing import Optional
 from dotenv import load_dotenv
 load_dotenv()
-
+from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
 print(load_dotenv())
 from langchain_openai import ChatOpenAI
 from langchain_core.chat_history import InMemoryChatMessageHistory
 from langchain_core.messages import HumanMessage, ToolMessage
 from bajaj_tools import get_loan_status, get_emi_schedule, calculate_prepayment, process_refund_request
-
+from rag_chain import rag_answer
 
 app = FastAPI()
 # print(get_loan_status.invoke("BFL2024001"))
@@ -34,15 +34,51 @@ tool_map = {
     "process_refund_request": process_refund_request,
 }
 
+# feature addiing rag chain
+ROUTER_PROMPT = """
+You are a query classifier for Bajaj Finance helpdesk.
+
+Classify the customer query into ONE of these categories:
+- "tool"   : query requires live loan data (needs Loan ID like BFL001)
+              Examples: loan status, EMI schedule, prepayment, refund,
+              foreclose my loan, close my loan, settle my account
+- "policy" : query is about rules, eligibility, charges, documents
+              AND follow-up questions about a previous policy answer
+              Examples: CIBIL score, foreclosure charges, interest rates,
+              documents needed, what happens if I miss EMI,
+              "how do you know this", "where did you get this",
+              "is this from your policy", "what is your source"
+- "general": greeting, thank you, out of scope
+
+Reply with ONLY one word: tool / policy / general
+"""
+
+def classify_query(query):
+    response = llm.invoke([
+        SystemMessage(content=ROUTER_PROMPT),
+        HumanMessage(content=query),
+    ])
+    category = response.content.strip()
+    if category not in ["tool", "policy", "general"]:
+        raise ValueError(f"Invalid category: {category}")
+    return category
+
+
+
 
 SYSTEM_PROMPT = """You are a professional Bajaj Finance customer support agent.
 
+You have access to:
+1. TOOLS  — for live loan data (status, EMI, prepayment, refund)
+             Use when customer provides a Loan ID (BFL + digits)
+2. POLICY — handled separately via knowledge base
+
 RULES:
-- ALWAYS use the provided tools to fetch real loan data. Never guess or make up numbers.
-- If the customer has not given a loan ID (format: BFL followed by digits), ask for it first.
-- Format all amounts with ₹ and commas (e.g., ₹8,450).
-- Be warm, concise, and professional.
-- If a loan is not found, tell the customer and ask them to double-check the loan ID."""
+- Loan ID present → use tools
+- Format all amounts with Rs and commas (e.g., Rs 8,450)
+- Be warm, concise, and professional
+- If a loan is not found, ask customer to double-check the Loan ID
+"""
 
 
 store = {}
@@ -89,6 +125,30 @@ def run_chat_turn(user_message:str,session_id):
     return response.content, tools_used
 
 
+def run_policy_run(user_message:str,session_id):
+    history = get_session_history(session_id)
+    policy_history = [msg for msg in history.messages if msg.role in ['human','ai']]
+    reply = rag_answer(user_message,policy_history)
+    history.add_user_message(user_message)
+    history.add_ai_message(reply)
+    return reply
+
+
+def run_general_turn(user_message:str,session_id):
+    history = get_session_history(session_id)
+    message = [{'role':"system","content":SYSTEM_PROMPT}]
+    message.extend(history.messages)
+    message.append(HumanMessage(content=user_message))
+    response = llm.invoke(message)
+    history.add_user_message(user_message)
+    history.add_ai_message(response.content)
+    return response.content
+    
+    
+
+
+
+
 # Input ?? query --> messages --> return --> FE
 class ChatRequest(BaseModel):
     message: str
@@ -97,15 +157,31 @@ class ChatRequest(BaseModel):
 class ChatResponse(BaseModel):
     reply: str
     session_id: str
+    query_type: str
     tools_called: list[str] = []
 
 
 @app.post('/chat',response_model=ChatResponse)
 def chat(req:ChatRequest):
     session_id = str(uuid.uuid4())
-    reply, tool_called = run_chat_turn(req.message,req.session_id)
-    print('tool used: ',tool_called)
-    return ChatResponse(reply=reply, session_id=session_id, tools_called=tool_called)
+    query_type = classify_query(req.message)
+
+    if query_type == "tool":
+        reply, tool_called = run_chat_turn(req.message,req.session_id)
+        return ChatResponse(reply=reply, session_id=session_id, tools_called=tool_called,
+                            query_type=query_type)
+    elif query_type == "policy":
+        reply = run_policy_run(req.message,req.session_id)
+        return ChatResponse(reply=reply, session_id=session_id, query_type=query_type)
+    
+    else:
+        reply = run_general_turn(req.message,req.session_id)
+        return ChatResponse(reply=reply, session_id=session_id, query_type=query_type)
+
+    
+    # reply, tool_called = run_chat_turn(req.message,req.session_id)
+    # print('tool used: ',tool_called)
+    # return ChatResponse(reply=reply, session_id=session_id, tools_called=tool_called)
  
 
 @app.get('/',response_class=HTMLResponse)
