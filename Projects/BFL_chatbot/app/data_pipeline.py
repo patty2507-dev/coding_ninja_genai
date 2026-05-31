@@ -24,6 +24,18 @@ def get_chunk_hash(text):
     return hashlib.md5(text.strip().encode()).hexdigest()
 
 
+def load_log():
+    try:
+        with open(LOG_FILE, 'r') as f:
+            return json.load(f)
+    except FileNotFoundError:
+        return {}
+    
+def save_log(log:dict):
+    with open(LOG_FILE, 'w') as f:
+        json.dump(log, f)
+
+
 
 
 def load_and_chunk(filepath):
@@ -59,6 +71,7 @@ def run_pipeline():
     
     print("Chroma DB loaded:",vectorstore._collection.count())
     existing_hashes = get_existing_hashes(vectorstore)
+    log = load_log()
     print("Existing hashes:", len(existing_hashes))
 
     pdf_files = list(Path(PDF_FOLDER).glob("*.pdf"))
@@ -74,7 +87,19 @@ def run_pipeline():
                 print("I am inside hash for new chunks")
                 vectorstore.add_documents([chunk])
                 existing_hashes.add(chunk.metadata["chunk_hash"])
-            print('duplicate chunks')
+            
+            log[pdf_path.name] ={
+                "last_processed_on": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                'total_chunks': len(chunks),
+
+            }
+
+    save_log(log)
+
+
+    
+
+    
 
     print("Chroma DB updated:",vectorstore._collection.count())
 
