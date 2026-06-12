@@ -1,0 +1,41 @@
+# ── LlamaIndex (ingestion) ──────────────────────────────────────────
+llama-index-core
+llama-index-readers-file
+llama-index-embeddings-openai
+
+# ── LangChain (retrieval + generation) ─────────────────────────────
+langchain
+langchain-openai
+langchain-community
+
+# ── Vector store ────────────────────────────────────────────────────
+pinecone
+
+# ── Reranker ────────────────────────────────────────────────────────
+sentence-transformers
+
+# ── API ─────────────────────────────────────────────────────────────
+fastapi
+uvicorn[standard]
+python-multipart
+
+# ── Async task queue ────────────────────────────────────────────────
+celery
+redis
+
+# ── OpenAI ──────────────────────────────────────────────────────────
+openai
+
+# ── Evaluation ──────────────────────────────────────────────────────
+ragas
+
+# ── Observability ───────────────────────────────────────────────────
+mlflow
+prometheus-fastapi-instrumentator
+
+# ── Config ──────────────────────────────────────────────────────────
+pydantic-settings
+python-dotenv
+
+# ── Utilities ───────────────────────────────────────────────────────
+pymupdf
