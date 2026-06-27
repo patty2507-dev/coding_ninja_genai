@@ -27,3 +27,6 @@ def ingest_resume(file_path: str) -> dict:
     print(f"  candidate_id: {candidate_id}")
     
     return nodes
+
+def dummy():
+    return 'working'
