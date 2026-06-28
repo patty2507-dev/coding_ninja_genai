@@ -24,24 +24,24 @@ def retrieve(
     return top_candidates
     
     
-from retrieval.chain import retrieve
-jd = """
-We are looking for a Senior Accountant to join our finance team.
-Requirements:
-- 3+ years of accounting experience
-- Strong knowledge of financial reporting and general ledger
-- Experience with month-end closing and bank reconciliation
-- Proficiency in accounting software (SAP, NetSuite, or similar)
-- CPA certification preferred
-- Experience with variance analysis and budget planning
-Responsibilities:
-- Prepare and review financial statements
-- Manage accounts receivable and payable
-- Perform month-end and year-end close procedures
-- Ensure compliance with accounting standards
+# from retrieval.chain import retrieve
+# jd = """
+# We are looking for a Senior Accountant to join our finance team.
+# Requirements:
+# - 3+ years of accounting experience
+# - Strong knowledge of financial reporting and general ledger
+# - Experience with month-end closing and bank reconciliation
+# - Proficiency in accounting software (SAP, NetSuite, or similar)
+# - CPA certification preferred
+# - Experience with variance analysis and budget planning
+# Responsibilities:
+# - Prepare and review financial statements
+# - Manage accounts receivable and payable
+# - Perform month-end and year-end close procedures
+# - Ensure compliance with accounting standards
 
 
-"""
+# """
 
-test = retrieve(jd, top_k=4)
-print(test)
+# test = retrieve(jd, top_k=4)
+# print(test)

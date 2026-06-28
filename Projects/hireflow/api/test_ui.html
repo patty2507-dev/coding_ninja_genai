@@ -1,0 +1,883 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HireFlow — Intelligent Candidate Evaluation</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #ffffff;
+      --bg-secondary: #f8f9fa;
+      --bg-tertiary: #f1f3f5;
+      --text: #212529;
+      --text-secondary: #6c757d;
+      --text-tertiary: #adb5bd;
+      --border: #dee2e6;
+      --border-hover: #ced4da;
+      --blue: #185FA5;
+      --blue-light: #E6F1FB;
+      --blue-dark: #0C447C;
+      --green: #2E7D32;
+      --green-light: #EAF3DE;
+      --amber: #854F0B;
+      --amber-light: #FAEEDA;
+      --red: #A32D2D;
+      --red-light: #FCEBEB;
+      --radius-sm: 6px;
+      --radius-md: 8px;
+      --radius-lg: 12px;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-size: 14px;
+      color: var(--text);
+      background: var(--bg-tertiary);
+      min-height: 100vh;
+    }
+
+    /* ── Top Nav ── */
+    .navbar {
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+      padding: 0 1.5rem;
+      height: 56px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .navbar-brand {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--blue);
+      text-decoration: none;
+    }
+    .navbar-brand i { font-size: 22px; }
+    .navbar-right {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .api-badge {
+      font-size: 11px;
+      padding: 3px 8px;
+      border-radius: 99px;
+      border: 1px solid var(--border);
+      color: var(--text-secondary);
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: #ccc;
+    }
+    .dot.online { background: #4caf50; }
+
+    /* ── Layout ── */
+    .layout {
+      display: grid;
+      grid-template-columns: 300px 1fr;
+      gap: 0;
+      min-height: calc(100vh - 56px);
+    }
+
+    /* ── Sidebar ── */
+    .sidebar {
+      background: var(--bg);
+      border-right: 1px solid var(--border);
+      padding: 1.25rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+      overflow-y: auto;
+    }
+    .section-label {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-tertiary);
+      text-transform: uppercase;
+      letter-spacing: .07em;
+      margin-bottom: 8px;
+    }
+
+    /* ── Upload zone ── */
+    .upload-zone {
+      border: 1.5px dashed var(--border-hover);
+      border-radius: var(--radius-md);
+      padding: 1.25rem 1rem;
+      text-align: center;
+      cursor: pointer;
+      transition: background .15s, border-color .15s;
+    }
+    .upload-zone:hover { background: var(--bg-secondary); border-color: var(--blue); }
+    .upload-zone i { font-size: 28px; color: var(--text-tertiary); display: block; margin-bottom: 6px; }
+    .upload-zone .uz-title { font-size: 13px; font-weight: 500; color: var(--text); }
+    .upload-zone .uz-sub { font-size: 11px; color: var(--text-tertiary); margin-top: 2px; }
+    .upload-zone input { display: none; }
+    .file-pill {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--blue-light);
+      border: 1px solid #85B7EB;
+      border-radius: var(--radius-md);
+      padding: 7px 10px;
+      font-size: 12px;
+      margin-top: 8px;
+    }
+    .file-pill i { font-size: 14px; color: var(--blue); }
+    .file-pill .fp-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--blue-dark); font-weight: 500; }
+    .file-pill .fp-remove { cursor: pointer; color: var(--text-tertiary); font-size: 14px; line-height: 1; }
+    .file-pill .fp-remove:hover { color: var(--red); }
+
+    /* ── Buttons ── */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 9px 16px;
+      border-radius: var(--radius-md);
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all .15s;
+      border: 1px solid transparent;
+      width: 100%;
+    }
+    .btn:disabled { opacity: .5; cursor: not-allowed; }
+    .btn-primary { background: var(--blue); color: #fff; border-color: var(--blue); }
+    .btn-primary:hover:not(:disabled) { background: var(--blue-dark); border-color: var(--blue-dark); }
+    .btn-outline { background: transparent; color: var(--text); border-color: var(--border-hover); }
+    .btn-outline:hover:not(:disabled) { background: var(--bg-secondary); }
+    .btn-sm { padding: 6px 12px; font-size: 12px; width: auto; }
+
+    /* ── Status text ── */
+    .status-msg {
+      font-size: 11px;
+      text-align: center;
+      min-height: 16px;
+      margin-top: 4px;
+    }
+    .status-msg.success { color: var(--green); }
+    .status-msg.error { color: var(--red); }
+    .status-msg.info { color: var(--blue); }
+    .status-msg.warn { color: var(--amber); }
+
+    /* ── JD textarea ── */
+    .jd-textarea {
+      width: 100%;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 10px 12px;
+      font-size: 13px;
+      font-family: inherit;
+      resize: vertical;
+      min-height: 160px;
+      color: var(--text);
+      background: var(--bg);
+      line-height: 1.5;
+    }
+    .jd-textarea:focus { outline: none; border-color: var(--blue); }
+
+    /* ── Top-k slider ── */
+    .slider-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .slider-row label { font-size: 12px; color: var(--text-secondary); white-space: nowrap; }
+    .slider-row input[type=range] {
+      flex: 1;
+      accent-color: var(--blue);
+    }
+    .slider-row .slider-val {
+      font-size: 14px;
+      font-weight: 600;
+      min-width: 20px;
+      text-align: center;
+      color: var(--blue);
+    }
+
+    /* ── Main panel ── */
+    .main {
+      padding: 1.5rem;
+      overflow-y: auto;
+    }
+
+    /* ── Empty state ── */
+    .empty-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 5rem 2rem;
+      text-align: center;
+      gap: 10px;
+      color: var(--text-tertiary);
+    }
+    .empty-state i { font-size: 48px; }
+    .empty-state h3 { font-size: 16px; font-weight: 500; color: var(--text-secondary); }
+    .empty-state p { font-size: 13px; line-height: 1.6; }
+
+    /* ── Results header ── */
+    .results-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      margin-bottom: 1rem;
+    }
+    .results-header h2 { font-size: 16px; font-weight: 600; }
+    .results-header p { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+
+    /* ── Metrics row ── */
+    .metrics-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-bottom: 1.25rem;
+    }
+    .metric-card {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 12px 14px;
+    }
+    .metric-card .mv { font-size: 22px; font-weight: 600; }
+    .metric-card .ml { font-size: 11px; color: var(--text-secondary); margin-top: 2px; }
+
+    /* ── Candidate cards ── */
+    .candidate-card {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 1.25rem;
+      margin-bottom: 12px;
+      transition: border-color .2s;
+    }
+    .candidate-card:hover { border-color: var(--border-hover); }
+    .candidate-card.evaluating {
+      border-color: #85B7EB;
+      background: #f0f7ff;
+    }
+
+    .card-top {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+    .card-left { display: flex; align-items: center; gap: 12px; }
+    .avatar {
+      width: 40px; height: 40px;
+      border-radius: 50%;
+      background: var(--blue-light);
+      color: var(--blue-dark);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      font-weight: 600;
+      flex-shrink: 0;
+    }
+    .card-name { font-size: 15px; font-weight: 600; }
+    .card-email { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+
+    /* ── Badges ── */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px 10px;
+      border-radius: 99px;
+      font-size: 12px;
+      font-weight: 500;
+    }
+    .badge-hire { background: var(--green-light); color: var(--green); }
+    .badge-maybe { background: var(--amber-light); color: var(--amber); }
+    .badge-reject { background: var(--red-light); color: var(--red); }
+    .badge-loading { background: var(--blue-light); color: var(--blue); }
+
+    /* ── Score bar ── */
+    .score-section { margin-bottom: 12px; }
+    .score-row { display: flex; align-items: center; gap: 10px; }
+    .score-label { font-size: 12px; color: var(--text-secondary); min-width: 50px; }
+    .score-bar-bg {
+      flex: 1;
+      height: 7px;
+      background: var(--bg-tertiary);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    .score-bar-fill {
+      height: 100%;
+      border-radius: 4px;
+      transition: width .5s ease;
+    }
+    .score-val { font-size: 13px; font-weight: 600; min-width: 36px; text-align: right; }
+
+    /* ── Strengths & Gaps ── */
+    .sg-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+    .sg-box { background: var(--bg-secondary); border-radius: var(--radius-md); padding: 10px 12px; }
+    .sg-title {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .sg-title.strengths { color: var(--green); }
+    .sg-title.gaps { color: var(--red); }
+    .sg-box ul { list-style: none; }
+    .sg-box ul li {
+      font-size: 12px;
+      color: var(--text-secondary);
+      padding: 2px 0;
+      padding-left: 12px;
+      position: relative;
+      line-height: 1.5;
+    }
+    .sg-box ul li::before {
+      content: '•';
+      position: absolute;
+      left: 0;
+      color: var(--text-tertiary);
+    }
+
+    /* ── Reasoning ── */
+    .reasoning {
+      font-size: 12px;
+      color: var(--text-secondary);
+      background: var(--bg-secondary);
+      border-radius: var(--radius-md);
+      padding: 10px 12px;
+      line-height: 1.6;
+      margin-bottom: 12px;
+      border-left: 3px solid var(--border-hover);
+    }
+
+    /* ── Action buttons ── */
+    .action-row {
+      display: flex;
+      gap: 6px;
+      padding-top: 10px;
+      border-top: 1px solid var(--border);
+    }
+    .action-btn {
+      flex: 1;
+      padding: 7px 8px;
+      border-radius: var(--radius-md);
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--text-secondary);
+      transition: all .15s;
+    }
+    .action-btn:hover { background: var(--bg-secondary); color: var(--text); border-color: var(--border-hover); }
+    .action-btn.shortlist { border-color: #81c784; color: var(--green); }
+    .action-btn.shortlist:hover { background: var(--green-light); }
+    .action-btn.shortlist.active { background: var(--green-light); border-color: var(--green); font-weight: 600; }
+    .action-btn.reject-btn { border-color: #e57373; color: var(--red); }
+    .action-btn.reject-btn:hover { background: var(--red-light); }
+    .action-btn.reject-btn.active { background: var(--red-light); border-color: var(--red); font-weight: 600; }
+
+    /* ── Pulse animation ── */
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+    .pulse { animation: pulse 1.2s ease-in-out infinite; }
+
+    /* ── Spinner ── */
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .spin { animation: spin .8s linear infinite; display: inline-block; }
+
+    /* ── Divider ── */
+    .divider { border: none; border-top: 1px solid var(--border); margin: 0; }
+  </style>
+</head>
+<body>
+
+<!-- Navbar -->
+<nav class="navbar">
+  <a class="navbar-brand" href="#">
+    <i class="ti ti-brain"></i>
+    HireFlow
+  </a>
+  <div class="navbar-right">
+    <div class="api-badge">
+      <span class="dot" id="apiDot"></span>
+      <span id="apiStatus">Checking API...</span>
+    </div>
+  </div>
+</nav>
+
+<!-- Layout -->
+<div class="layout">
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+
+    <!-- Upload section -->
+    <div>
+      <div class="section-label">Resume pool</div>
+      <div class="upload-zone" onclick="document.getElementById('zipInput').click()">
+        <i class="ti ti-upload"></i>
+        <div class="uz-title">Upload ZIP of resumes</div>
+        <div class="uz-sub">Click to browse or drag & drop</div>
+        <input type="file" id="zipInput" accept=".zip,.pdf" onchange="handleFileSelect(this)">
+      </div>
+      <div id="filePill" style="display:none" class="file-pill">
+        <i class="ti ti-file-zip"></i>
+        <span class="fp-name" id="fileName"></span>
+        <i class="ti ti-x fp-remove" onclick="clearFile()" title="Remove"></i>
+      </div>
+      <button class="btn btn-outline" style="margin-top:10px" onclick="uploadResumes()" id="uploadBtn">
+        <i class="ti ti-database-import"></i> Index resumes
+      </button>
+      <div class="status-msg" id="uploadStatus"></div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- JD section -->
+    <div style="flex:1;display:flex;flex-direction:column;gap:8px">
+      <div class="section-label">Job description</div>
+      <textarea
+        class="jd-textarea"
+        id="jdInput"
+        placeholder="Paste the job description here...
+
+Example:
+We are looking for a Senior Accountant with 3+ years of experience in financial reporting, month-end closing, and bank reconciliation. Proficiency in SAP or NetSuite required. CPA preferred."></textarea>
+    </div>
+
+    <hr class="divider">
+
+    <!-- Top-k -->
+    <div>
+      <div class="section-label">Top candidates to show</div>
+      <div class="slider-row">
+        <label>Top</label>
+        <input type="range" min="1" max="10" value="3" step="1" id="topkSlider"
+          oninput="document.getElementById('topkVal').textContent = this.value">
+        <span class="slider-val" id="topkVal">3</span>
+      </div>
+    </div>
+
+    <!-- Find button -->
+    <button class="btn btn-primary" id="evalBtn" onclick="evaluate()">
+      <i class="ti ti-search"></i> Find candidates
+    </button>
+    <div class="status-msg" id="evalStatus"></div>
+
+  </aside>
+
+  <!-- Main -->
+  <main class="main" id="mainPanel">
+
+    <!-- Empty state -->
+    <div class="empty-state" id="emptyState">
+      <i class="ti ti-users"></i>
+      <h3>No results yet</h3>
+      <p>Upload a ZIP of resumes and paste a job description,<br>then click <strong>Find candidates</strong> to get started.</p>
+    </div>
+
+    <!-- Results -->
+    <div id="resultsPanel" style="display:none">
+
+      <div class="results-header">
+        <div>
+          <h2 id="resultsTitle">Candidates</h2>
+          <p id="resultsSub"></p>
+        </div>
+        <button class="btn btn-outline btn-sm" onclick="exportCSV()">
+          <i class="ti ti-download"></i> Export CSV
+        </button>
+      </div>
+
+      <div class="metrics-row" id="metricsRow"></div>
+
+      <div id="candidateList"></div>
+
+    </div>
+
+  </main>
+</div>
+
+<script>
+  const API_BASE = 'http://localhost:8000/api';
+  let selectedFile = null;
+  let results = [];
+
+  // ── API health check ──────────────────────────────────────────────
+  async function checkAPI() {
+    try {
+      const res = await fetch('http://localhost:8000/health');
+      if (res.ok) {
+        document.getElementById('apiDot').className = 'dot online';
+        document.getElementById('apiStatus').textContent = 'API connected';
+      } else {
+        throw new Error();
+      }
+    } catch {
+      document.getElementById('apiDot').style.background = '#f44336';
+      document.getElementById('apiStatus').textContent = 'API offline';
+    }
+  }
+  checkAPI();
+  setInterval(checkAPI, 15000);
+
+  // ── File handling ─────────────────────────────────────────────────
+  function handleFileSelect(input) {
+    const file = input.files[0];
+    if (!file) return;
+    selectedFile = file;
+    document.getElementById('fileName').textContent = file.name;
+    document.getElementById('filePill').style.display = 'flex';
+  }
+
+  function clearFile() {
+    selectedFile = null;
+    document.getElementById('filePill').style.display = 'none';
+    document.getElementById('zipInput').value = '';
+    setStatus('uploadStatus', '', '');
+  }
+
+  // ── Upload resumes ────────────────────────────────────────────────
+  async function uploadResumes() {
+    if (!selectedFile) {
+      setStatus('uploadStatus', 'Please select a file first', 'warn');
+      return;
+    }
+    const btn = document.getElementById('uploadBtn');
+    btn.disabled = true;
+    setStatus('uploadStatus', 'Uploading & indexing...', 'info');
+
+    try {
+      const fd = new FormData();
+      fd.append('file', selectedFile);
+
+      const res = await fetch(`${API_BASE}/upload/resumes?use_celery=false`, {
+        method: 'POST',
+        body: fd
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || 'Upload failed');
+
+      setStatus('uploadStatus', `Indexed ${data.total_files} resume(s)`, 'success');
+    } catch (e) {
+      setStatus('uploadStatus', e.message, 'error');
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
+  // ── Evaluate ──────────────────────────────────────────────────────
+  async function evaluate() {
+    const jd = document.getElementById('jdInput').value.trim();
+    if (!jd) {
+      setStatus('evalStatus', 'Please enter a job description', 'warn');
+      return;
+    }
+
+    const topK = parseInt(document.getElementById('topkSlider').value);
+    const btn = document.getElementById('evalBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="ti ti-loader spin"></i> Running...';
+    results = [];
+
+    document.getElementById('emptyState').style.display = 'none';
+    document.getElementById('resultsPanel').style.display = 'block';
+    document.getElementById('candidateList').innerHTML = '';
+    document.getElementById('metricsRow').innerHTML = '';
+    document.getElementById('resultsTitle').textContent = 'Evaluating candidates...';
+    document.getElementById('resultsSub').textContent = 'Pipeline running: embed → retrieve → rerank → evaluate';
+    setStatus('evalStatus', 'Connecting to pipeline...', 'info');
+
+    try {
+      const res = await fetch(`${API_BASE}/evaluate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ jd_text: jd, top_k: topK })
+      });
+
+      if (!res.ok) throw new Error('Evaluation request failed');
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop();
+
+        for (const line of lines) {
+          if (!line.startsWith('data: ')) continue;
+          const raw = line.slice(6).trim();
+          if (!raw) continue;
+          try {
+            const evt = JSON.parse(raw);
+            handleEvent(evt);
+          } catch (e) {}
+        }
+      }
+
+    } catch (e) {
+      setStatus('evalStatus', 'Error: ' + e.message, 'error');
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = '<i class="ti ti-search"></i> Find candidates';
+    }
+  }
+
+  // ── Handle SSE events ─────────────────────────────────────────────
+  function handleEvent(evt) {
+    if (evt.event === 'evaluating') {
+      setStatus('evalStatus', `Evaluating ${evt.rank}/${evt.total}: ${evt.file_name}`, 'info');
+      const ph = document.createElement('div');
+      ph.id = `card-${evt.rank}`;
+      ph.className = 'candidate-card evaluating';
+      ph.innerHTML = `
+        <div class="card-top">
+          <div class="card-left">
+            <div class="avatar" style="background:#dbeafe;color:#1e40af">
+              ${getInitials(evt.file_name)}
+            </div>
+            <div>
+              <div class="card-name pulse">${formatName(evt.file_name)}</div>
+              <div class="card-email">${evt.candidate_id}</div>
+            </div>
+          </div>
+          <span class="badge badge-loading">
+            <i class="ti ti-loader spin" style="font-size:11px"></i> Evaluating
+          </span>
+        </div>`;
+      document.getElementById('candidateList').appendChild(ph);
+    }
+
+    if (evt.event === 'result') {
+      const d = evt.data;
+      results.push({ rank: evt.rank, ...d });
+      const existing = document.getElementById(`card-${evt.rank}`);
+      const newCard = document.createElement('div');
+      newCard.innerHTML = buildCard(evt.rank, d);
+      if (existing) {
+        existing.replaceWith(newCard.firstElementChild);
+      } else {
+        document.getElementById('candidateList').appendChild(newCard.firstElementChild);
+      }
+      updateMetrics();
+      document.getElementById('resultsTitle').textContent = `Top ${results.length} candidate(s) found`;
+      document.getElementById('resultsSub').textContent = 'Ranked by semantic match + AI evaluation';
+      setStatus('evalStatus', `${results.length} candidate(s) evaluated`, 'success');
+    }
+
+    if (evt.event === 'error') {
+      const existing = document.getElementById(`card-${evt.rank}`);
+      const errCard = `<div class="candidate-card" style="border-color:#fca5a5">
+        <div class="card-name" style="color:var(--red)">${evt.candidate_id || 'Unknown'}</div>
+        <div style="font-size:12px;color:var(--text-secondary);margin-top:6px">
+          <i class="ti ti-alert-circle" style="font-size:13px"></i> ${evt.error}
+        </div>
+      </div>`;
+      if (existing) existing.outerHTML = errCard;
+    }
+
+    if (evt.event === 'done') {
+      setStatus('evalStatus', `Done — ${results.length} candidate(s) evaluated`, 'success');
+    }
+
+    if (evt.error && !evt.event) {
+      setStatus('evalStatus', evt.error, 'error');
+    }
+  }
+
+  // ── Build candidate card ──────────────────────────────────────────
+  function buildCard(rank, d) {
+    const score = Math.round(d.confidence_score * 100);
+    const scoreColor = score >= 80 ? '#2E7D32' : score >= 50 ? '#854F0B' : '#A32D2D';
+    const badgeClass = d.verdict === 'Hire' ? 'badge-hire' : d.verdict === 'Maybe' ? 'badge-maybe' : 'badge-reject';
+    const verdictIcon = d.verdict === 'Hire' ? 'ti-circle-check' : d.verdict === 'Maybe' ? 'ti-circle-half' : 'ti-circle-x';
+
+    const strengths = (d.strengths || []).slice(0, 3).map(s => `<li>${s}</li>`).join('');
+    const gaps = (d.gaps || []).slice(0, 3).map(g => `<li>${g}</li>`).join('');
+
+    return `<div class="candidate-card" id="card-${rank}">
+      <div class="card-top">
+        <div class="card-left">
+          <div class="avatar">${getInitials(d.file_name)}</div>
+          <div>
+            <div class="card-name">${formatName(d.file_name)}</div>
+            <div class="card-email">${d.candidate_id}</div>
+          </div>
+        </div>
+        <span class="badge ${badgeClass}">
+          <i class="ti ${verdictIcon}" style="font-size:12px"></i>
+          ${d.verdict}
+        </span>
+      </div>
+
+      <div class="score-section">
+        <div class="score-row">
+          <span class="score-label">Match</span>
+          <div class="score-bar-bg">
+            <div class="score-bar-fill" style="width:${score}%;background:${scoreColor}"></div>
+          </div>
+          <span class="score-val" style="color:${scoreColor}">${score}%</span>
+        </div>
+      </div>
+
+      <div class="sg-grid">
+        <div class="sg-box">
+          <div class="sg-title strengths">
+            <i class="ti ti-check" style="font-size:12px"></i> Strengths
+          </div>
+          <ul>${strengths || '<li>N/A</li>'}</ul>
+        </div>
+        <div class="sg-box">
+          <div class="sg-title gaps">
+            <i class="ti ti-alert-triangle" style="font-size:12px"></i> Gaps
+          </div>
+          <ul>${gaps || '<li>N/A</li>'}</ul>
+        </div>
+      </div>
+
+      <div class="reasoning">
+        <strong style="font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--text-tertiary)">Reasoning</strong><br>
+        ${d.reasoning || ''}
+      </div>
+
+      <div class="action-row">
+        <button class="action-btn shortlist" id="shortlist-${rank}" onclick="takeAction(${rank}, 'shortlist')">
+          <i class="ti ti-user-check" style="font-size:13px"></i> Shortlist
+        </button>
+        <button class="action-btn reject-btn" id="reject-${rank}" onclick="takeAction(${rank}, 'reject')">
+          <i class="ti ti-user-x" style="font-size:13px"></i> Reject
+        </button>
+        <button class="action-btn" onclick="takeAction(${rank}, 'up')" title="Good match — AI was right">
+          <i class="ti ti-thumb-up" style="font-size:13px"></i>
+        </button>
+        <button class="action-btn" onclick="takeAction(${rank}, 'down')" title="Poor match — AI was wrong">
+          <i class="ti ti-thumb-down" style="font-size:13px"></i>
+        </button>
+      </div>
+    </div>`;
+  }
+
+  // ── Actions ───────────────────────────────────────────────────────
+  function takeAction(rank, action) {
+    const sb = document.getElementById(`shortlist-${rank}`);
+    const rb = document.getElementById(`reject-${rank}`);
+    if (!sb || !rb) return;
+
+    if (action === 'shortlist') {
+      sb.className = 'action-btn shortlist active';
+      sb.innerHTML = '<i class="ti ti-check" style="font-size:13px"></i> Shortlisted';
+      rb.className = 'action-btn reject-btn';
+      rb.innerHTML = '<i class="ti ti-user-x" style="font-size:13px"></i> Reject';
+    } else if (action === 'reject') {
+      rb.className = 'action-btn reject-btn active';
+      rb.innerHTML = '<i class="ti ti-x" style="font-size:13px"></i> Rejected';
+      sb.className = 'action-btn shortlist';
+      sb.innerHTML = '<i class="ti ti-user-check" style="font-size:13px"></i> Shortlist';
+    }
+  }
+
+  // ── Metrics ───────────────────────────────────────────────────────
+  function updateMetrics() {
+    if (!results.length) return;
+    const hire = results.filter(r => r.verdict === 'Hire').length;
+    const maybe = results.filter(r => r.verdict === 'Maybe').length;
+    const reject = results.filter(r => r.verdict === 'Reject').length;
+    const avg = Math.round(results.reduce((a, r) => a + r.confidence_score, 0) / results.length * 100);
+
+    document.getElementById('metricsRow').innerHTML = `
+      <div class="metric-card">
+        <div class="mv">${results.length}</div>
+        <div class="ml">Candidates evaluated</div>
+      </div>
+      <div class="metric-card">
+        <div class="mv">
+          <span style="color:var(--green)">${hire} hire</span>
+          <span style="font-size:14px;color:var(--text-tertiary)"> · </span>
+          <span style="color:var(--amber)">${maybe} maybe</span>
+          <span style="font-size:14px;color:var(--text-tertiary)"> · </span>
+          <span style="color:var(--red)">${reject} reject</span>
+        </div>
+        <div class="ml">Verdicts</div>
+      </div>
+      <div class="metric-card">
+        <div class="mv" style="color:var(--blue)">${avg}%</div>
+        <div class="ml">Avg match score</div>
+      </div>`;
+  }
+
+  // ── Export CSV ────────────────────────────────────────────────────
+  function exportCSV() {
+    if (!results.length) return;
+    const headers = ['Rank', 'File', 'Candidate ID', 'Score', 'Verdict', 'Strengths', 'Gaps', 'Reasoning'];
+    const rows = results.map(r => [
+      r.rank,
+      r.file_name,
+      r.candidate_id,
+      r.confidence_score,
+      r.verdict,
+      (r.strengths || []).join(' | '),
+      (r.gaps || []).join(' | '),
+      r.reasoning
+    ]);
+    const csv = [headers, ...rows]
+      .map(row => row.map(c => `"${String(c).replace(/"/g, '""')}"`).join(','))
+      .join('\n');
+
+    const a = document.createElement('a');
+    a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
+    a.download = `hireflow_results_${new Date().toISOString().slice(0,10)}.csv`;
+    a.click();
+  }
+
+  // ── Helpers ───────────────────────────────────────────────────────
+  function getInitials(filename) {
+    return filename.replace('.pdf', '').split(/[_\s-]/)[0].slice(0, 2).toUpperCase();
+  }
+
+  function formatName(filename) {
+    return filename.replace('.pdf', '').replace(/_/g, ' ');
+  }
+
+  function setStatus(id, msg, type) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.textContent = msg;
+    el.className = `status-msg ${type}`;
+  }
+</script>
+</body>
+</html>
