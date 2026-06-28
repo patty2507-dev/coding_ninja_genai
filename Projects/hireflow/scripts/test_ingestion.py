@@ -5,6 +5,6 @@ from ingestion.pipeline import ingest_resume
 
 if __name__ == "__main__":
 
-    file_path =  "resume/Andrew_Green_Resume_27.pdf"
+    file_path =  "resume/Angela_Lewis_Resume_09.pdf"
     nodes = ingest_resume(file_path)
     print(f"Created {len(nodes)} chunk(s) from {file_path}")
