@@ -2,16 +2,16 @@ import re
 from typing import Optional
 
 from openai import OpenAI
-from config import settings
+# from config import settings
 
-_client = None
+# _client = None
 
 
-def _get_client() -> OpenAI:
-    global _client
-    if _client is None:
-        _client = OpenAI(api_key=settings.openai_api_key)
-    return _client
+# def _get_client() -> OpenAI:
+#     global _client
+#     if _client is None:
+#         _client = OpenAI(api_key=settings.openai_api_key)
+#     return _client
 
 
 
