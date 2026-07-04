@@ -1,15 +1,23 @@
-pandas
-scikit-learn
-openpyxl
-transformers
-huggingface-hub
-torch
+fastapi
+uvicorn
+python-multipart
 openai
+pandas
 python-dotenv
-langchain
-langchain_openai
-langchain_core
-langchain_huggingface
+pydantic
+pydantic-settings
+PyYAML
+requests
+streamlit
+sentence-transformers
+torch
+transformers
+langchain-core
+langchain-openai
+langchain-chroma
+langchain-community
+langchain-text-splitters
+llama-index
+pinecone-client
 
-
-# test
+# Derived from Projects folder dependency analysis
