@@ -10,3 +10,6 @@ https://arxiv.org/pdf/2309.02427 ( Must read paper)
 
 # Langchain : Memory
 https://docs.langchain.com/oss/python/concepts/memory
+
+# ReAct ( optional)
+https://arxiv.org/pdf/2210.03629
