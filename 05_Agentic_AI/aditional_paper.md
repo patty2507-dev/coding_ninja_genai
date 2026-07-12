@@ -13,3 +13,12 @@ https://docs.langchain.com/oss/python/concepts/memory
 
 # ReAct ( optional)
 https://arxiv.org/pdf/2210.03629
+
+#from-react-loop-to-production-agent-a-hands-on-langgraph-tutorial-
+https://medium.com/@mzeynali01/from-react-loop-to-production-agent-a-hands-on-langgraph-tutorial-ffd2649706ad
+
+# Additional repo ( optional)
+https://github.com/mzeynali/agentic-ai-course.git
+
+# Anthropic way to build building-effective-agents
+https://www.anthropic.com/engineering/building-effective-agents
