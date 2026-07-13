@@ -22,3 +22,6 @@ https://github.com/mzeynali/agentic-ai-course.git
 
 # Anthropic way to build building-effective-agents
 https://www.anthropic.com/engineering/building-effective-agents
+
+# Orignal paper for decay concept
+https://arxiv.org/pdf/2304.03442

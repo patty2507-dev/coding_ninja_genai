@@ -1,0 +1,1210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Session 4 — Agent Architectures &amp; Design Patterns</title>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,700;12..96,800&family=JetBrains+Mono:ital,wght@0,400;0,500;1,400&family=Lora:ital,wght@0,400;1,400&display=swap" rel="stylesheet">
+<style>
+:root {
+  --ink: #0f0e17;
+  --paper: #fffcf5;
+  --warm: #f5f0e8;
+  --accent: #e63946;
+  --accent2: #2a9d8f;
+  --accent3: #e9c46a;
+  --accent4: #f4a261;
+  --muted: #6b6560;
+  --border: #e0d8cc;
+  --code-bg: #1a1a2e;
+  --code-text: #e2e2ff;
+  --code-green: #a8ff78;
+  --code-yellow: #ffe066;
+  --code-red: #ff6b6b;
+  --code-blue: #74b9ff;
+  --code-comment: #636e72;
+  --pain: #fff0f0;
+  --pain-border: #ffcdd2;
+  --win: #f0fff4;
+  --win-border: #c8e6c9;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: 'Lora', Georgia, serif;
+  font-size: 16px;
+  line-height: 1.8;
+}
+
+/* ── PROGRESS STRIP ── */
+.progress-strip {
+  position: fixed; top: 0; left: 0; right: 0;
+  height: 3px; background: var(--border); z-index: 999;
+}
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent), var(--accent4));
+  width: 0%; transition: width 0.3s;
+}
+
+/* ── TOP NAV ── */
+.topnav {
+  position: fixed; top: 3px; left: 0; right: 0;
+  height: 52px;
+  background: rgba(255,252,245,0.95);
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center;
+  padding: 0 32px; gap: 0; z-index: 998;
+  backdrop-filter: blur(8px); overflow-x: auto;
+}
+.nav-session-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px; color: var(--accent);
+  letter-spacing: 2px; text-transform: uppercase;
+  margin-right: 24px; white-space: nowrap; flex-shrink: 0;
+}
+.nav-chapters { display: flex; gap: 4px; align-items: center; }
+.nav-ch {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px; color: var(--muted);
+  padding: 4px 10px; border-radius: 4px;
+  cursor: pointer; background: none; border: none;
+  white-space: nowrap; transition: all 0.2s;
+}
+.nav-ch:hover { background: var(--warm); color: var(--ink); }
+.nav-ch.active { background: var(--accent); color: white; }
+.nav-right {
+  margin-left: auto;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px; color: var(--muted); white-space: nowrap; flex-shrink: 0;
+}
+
+/* ── MAIN ── */
+.main { padding-top: 55px; }
+.chapter { display: none; max-width: 780px; margin: 0 auto; padding: 60px 32px 100px; }
+.chapter.active { display: block; }
+
+/* ── CHAPTER HERO ── */
+.ch-hero { margin-bottom: 56px; padding-bottom: 40px; border-bottom: 2px solid var(--ink); }
+.ch-number {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px; color: var(--muted);
+  letter-spacing: 3px; text-transform: uppercase; margin-bottom: 16px;
+}
+.ch-title {
+  font-family: 'Bricolage Grotesque', sans-serif;
+  font-size: 44px; font-weight: 800; line-height: 1.05; margin-bottom: 20px;
+}
+.ch-title .accent { color: var(--accent); }
+.ch-title .accent2 { color: var(--accent2); }
+.ch-title .accent3 { color: var(--accent3); }
+.ch-subtitle { font-size: 17px; color: var(--muted); max-width: 560px; line-height: 1.7; font-style: italic; }
+.ch-objectives {
+  margin-top: 28px; padding: 20px 24px;
+  background: var(--warm); border-radius: 8px;
+  border-left: 3px solid var(--accent3);
+}
+.ch-objectives .obj-title {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px; letter-spacing: 2px; text-transform: uppercase;
+  color: var(--muted); margin-bottom: 10px;
+}
+.ch-objectives ul {
+  padding-left: 18px; font-size: 14px; color: var(--ink);
+  line-height: 1.8; font-family: 'Bricolage Grotesque', sans-serif;
+}
+
+/* ── HEADINGS ── */
+h2 {
+  font-family: 'Bricolage Grotesque', sans-serif;
+  font-size: 28px; font-weight: 800; margin: 48px 0 20px; line-height: 1.2;
+}
+h3 {
+  font-family: 'Bricolage Grotesque', sans-serif;
+  font-size: 20px; font-weight: 700; margin: 36px 0 14px; color: var(--ink);
+}
+h4 {
+  font-family: 'Bricolage Grotesque', sans-serif;
+  font-size: 16px; font-weight: 700; margin: 24px 0 8px;
+  color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px;
+}
+p { margin-bottom: 18px; color: var(--ink); }
+
+/* ── BOXES ── */
+.story-box {
+  background: #fffbef; border: 1px solid var(--accent3);
+  border-radius: 10px; padding: 24px 28px; margin: 28px 0; position: relative;
+}
+.story-box::before {
+  content: '📖'; position: absolute; top: -14px; left: 20px;
+  background: var(--paper); padding: 0 6px; font-size: 18px;
+}
+.story-box .story-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px; color: var(--accent4); letter-spacing: 2px;
+  text-transform: uppercase; margin-bottom: 10px; font-weight: 600;
+}
+
+.pain-box {
+  background: var(--pain); border: 1px solid var(--pain-border);
+  border-radius: 10px; padding: 24px 28px; margin: 28px 0; position: relative;
+}
+.pain-box::before {
+  content: '🔥'; position: absolute; top: -14px; left: 20px;
+  background: var(--paper); padding: 0 6px; font-size: 18px;
+}
+.pain-box .pain-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px; color: var(--accent); letter-spacing: 2px;
+  text-transform: uppercase; margin-bottom: 10px; font-weight: 600;
+}
+
+.win-box {
+  background: var(--win); border: 1px solid var(--win-border);
+  border-radius: 10px; padding: 24px 28px; margin: 28px 0; position: relative;
+}
+.win-box::before {
+  content: '✅'; position: absolute; top: -14px; left: 20px;
+  background: var(--paper); padding: 0 6px; font-size: 18px;
+}
+.win-box .win-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px; color: var(--accent2); letter-spacing: 2px;
+  text-transform: uppercase; margin-bottom: 10px; font-weight: 600;
+}
+
+.tip-box {
+  background: #f0f7ff; border: 1px solid #b3d4f5;
+  border-radius: 10px; padding: 20px 24px; margin: 24px 0;
+}
+.tip-box .tip-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px; color: #2563eb; letter-spacing: 2px;
+  text-transform: uppercase; margin-bottom: 8px; font-weight: 600;
+}
+
+/* ── CODE BLOCK ── */
+.code-block {
+  background: var(--code-bg); border-radius: 10px;
+  margin: 24px 0; overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.12);
+}
+.code-header {
+  display: flex; align-items: center;
+  padding: 12px 18px; border-bottom: 1px solid rgba(255,255,255,0.08); gap: 10px;
+}
+.code-dots { display: flex; gap: 6px; }
+.code-dot { width: 10px; height: 10px; border-radius: 50%; }
+.dot-r { background: #ff5f57; }
+.dot-y { background: #febc2e; }
+.dot-g { background: #28c840; }
+.code-filename {
+  font-family: 'JetBrains Mono', monospace; font-size: 12px;
+  color: rgba(255,255,255,0.4); margin-left: 4px;
+}
+.code-tag {
+  margin-left: auto; font-family: 'JetBrains Mono', monospace;
+  font-size: 10px; padding: 2px 8px; border-radius: 4px;
+  background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.4);
+}
+.code-tag.pain-tag { background: rgba(230,57,70,0.2); color: #ff6b6b; }
+.code-tag.win-tag { background: rgba(42,157,143,0.2); color: #a8ff78; }
+.code-body { padding: 20px 22px; overflow-x: auto; }
+.code-body pre {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px; line-height: 1.75; color: var(--code-text); white-space: pre;
+}
+.ck { color: var(--code-comment); font-style: italic; }
+.cg { color: var(--code-green); }
+.cy { color: var(--code-yellow); }
+.cr { color: var(--code-red); }
+.cb { color: var(--code-blue); }
+.cm { color: #fd79a8; }
+.co { color: var(--accent4); }
+.cp { color: #a29bfe; }
+
+/* ── OUTPUT BLOCK ── */
+.output-block {
+  background: #0d0d1a; border-radius: 8px;
+  padding: 16px 20px; margin: 8px 0 20px;
+  border-left: 3px solid rgba(255,255,255,0.1);
+}
+.output-block .out-label {
+  font-family: 'JetBrains Mono', monospace; font-size: 10px;
+  color: rgba(255,255,255,0.3); letter-spacing: 2px;
+  text-transform: uppercase; margin-bottom: 8px;
+}
+.output-block pre {
+  font-family: 'JetBrains Mono', monospace; font-size: 13px;
+  color: rgba(255,255,255,0.7); white-space: pre-wrap; line-height: 1.6;
+}
+.output-block.bad pre { color: #ff8a80; }
+.output-block.good pre { color: #a5d6a7; }
+
+/* ── COMPARE ── */
+.compare {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 16px; margin: 24px 0;
+}
+.compare-card {
+  border-radius: 8px; padding: 16px 18px;
+  border: 1px solid var(--border);
+}
+.compare-card.bad { background: var(--pain); border-color: var(--pain-border); }
+.compare-card.good { background: var(--win); border-color: var(--win-border); }
+.compare-card.neutral { background: var(--warm); border-color: var(--border); }
+.c-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px; letter-spacing: 2px; text-transform: uppercase;
+  margin-bottom: 10px; font-weight: 700;
+}
+.compare-card.bad .c-label { color: var(--accent); }
+.compare-card.good .c-label { color: var(--accent2); }
+.compare-card.neutral .c-label { color: var(--muted); }
+.compare-card p { margin: 0; font-size: 14px; line-height: 1.6; }
+
+/* ── INLINE CODE ── */
+code {
+  font-family: 'JetBrains Mono', monospace; font-size: 13px;
+  background: var(--warm); border: 1px solid var(--border);
+  border-radius: 4px; padding: 1px 6px; color: var(--accent);
+}
+
+/* ── DIVIDER ── */
+.divider { text-align: center; margin: 40px 0; color: var(--muted); font-size: 22px; letter-spacing: 6px; }
+
+/* ── EVOLUTION STEPS ── */
+.evolution { margin: 32px 0; position: relative; }
+.evo-step { display: flex; gap: 20px; margin-bottom: 32px; align-items: flex-start; }
+.evo-num {
+  width: 36px; height: 36px; border-radius: 50%;
+  background: var(--ink); color: white;
+  font-family: 'Bricolage Grotesque', sans-serif;
+  font-size: 15px; font-weight: 800;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; margin-top: 2px;
+}
+.evo-num.pain { background: var(--accent); }
+.evo-num.win { background: var(--accent2); }
+.evo-num.warn { background: var(--accent4); }
+.evo-content { flex: 1; }
+.evo-content h4 { margin: 0 0 8px; font-size: 15px; color: var(--ink); text-transform: none; letter-spacing: 0; }
+
+/* ── HANDSON BOX ── */
+.handson {
+  background: #f8f0ff; border: 2px solid #d4b8f0;
+  border-radius: 12px; padding: 28px 32px; margin: 36px 0;
+}
+.handson .hs-title {
+  font-family: 'Bricolage Grotesque', sans-serif;
+  font-size: 18px; font-weight: 800; color: #6b21a8;
+  margin-bottom: 6px; display: flex; align-items: center; gap: 10px;
+}
+.handson .hs-subtitle {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px; color: #9333ea; letter-spacing: 1px; margin-bottom: 18px;
+}
+.hs-tasks { padding-left: 20px; }
+.hs-tasks li { margin-bottom: 10px; color: var(--ink); font-size: 14.5px; line-height: 1.6; }
+.hs-tasks li strong { font-family: 'Bricolage Grotesque', sans-serif; color: #6b21a8; }
+
+/* ── COMPONENT GRID ── */
+.comp-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin: 24px 0; }
+.comp-card {
+  background: var(--warm); border: 1px solid var(--border);
+  border-radius: 10px; padding: 18px 20px;
+  transition: border-color 0.2s, transform 0.2s;
+}
+.comp-card:hover { border-color: var(--accent); transform: translateY(-2px); box-shadow: 0 4px 16px rgba(230,57,70,0.08); }
+.comp-card .comp-icon { font-size: 22px; margin-bottom: 8px; }
+.comp-card .comp-name {
+  font-family: 'Bricolage Grotesque', sans-serif;
+  font-size: 15px; font-weight: 800; margin-bottom: 4px; color: var(--ink);
+}
+.comp-card p { font-size: 13px; color: var(--muted); margin: 0; line-height: 1.6; }
+
+/* ── TABLE ── */
+table { width: 100%; border-collapse: collapse; margin: 24px 0; font-size: 13.5px; }
+thead th { background: var(--ink); color: white; padding: 10px 14px; text-align: left; }
+tbody td { padding: 10px 14px; border-bottom: 1px solid var(--border); vertical-align: top; }
+tbody tr:hover { background: var(--warm); }
+td strong { font-family: 'Bricolage Grotesque', sans-serif; }
+td.green { color: var(--accent2); font-weight: 600; }
+td.red { color: var(--accent); font-weight: 600; }
+
+/* ── CHAPTER NAV ── */
+.ch-nav { display: flex; justify-content: space-between; margin-top: 60px; padding-top: 32px; border-top: 1px solid var(--border); }
+.ch-btn {
+  font-family: 'Bricolage Grotesque', sans-serif;
+  font-size: 15px; font-weight: 700;
+  padding: 12px 24px; border-radius: 8px;
+  border: 2px solid var(--ink); background: white;
+  cursor: pointer; transition: all 0.2s; color: var(--ink);
+}
+.ch-btn:hover { background: var(--ink); color: white; }
+.ch-btn.primary { background: var(--accent); color: white; border-color: var(--accent); }
+.ch-btn.primary:hover { background: #c1121f; }
+.ch-btn small { display: block; font-size: 10px; font-family: 'JetBrains Mono', monospace; color: var(--muted); font-weight: 400; margin-bottom: 2px; }
+.ch-btn.primary small { color: rgba(255,255,255,0.7); }
+
+/* ── QUIZ ── */
+.quiz-section { margin: 32px 0; }
+.quiz-section h3 { margin-bottom: 24px; }
+.quiz-q {
+  font-family: 'Bricolage Grotesque', sans-serif;
+  font-size: 16px; font-weight: 700;
+  margin: 32px 0 12px; color: var(--ink);
+}
+.q-options { display: flex; flex-direction: column; gap: 8px; margin-bottom: 8px; }
+.q-opt {
+  text-align: left; padding: 12px 16px;
+  border: 1px solid var(--border); border-radius: 8px;
+  background: white; cursor: pointer;
+  font-family: 'Lora', serif; font-size: 14px;
+  transition: all 0.15s; color: var(--ink);
+}
+.q-opt:hover { border-color: var(--accent); background: var(--pain); }
+.q-opt.correct { background: var(--win); border-color: var(--accent2); color: #1b6452; }
+.q-opt.wrong { background: var(--pain); border-color: var(--accent); color: #7f1d1d; }
+.q-feedback {
+  display: none; font-size: 14px; padding: 12px 16px;
+  border-radius: 8px; margin-top: 4px; line-height: 1.6;
+}
+.q-feedback.show { display: block; }
+.q-feedback.ok { background: var(--win); border-left: 3px solid var(--accent2); color: #14532d; }
+.q-feedback.no { background: var(--pain); border-left: 3px solid var(--accent); color: #7f1d1d; }
+
+/* ── NEXT TEASER ── */
+.next-teaser {
+  margin-top: 56px; padding: 32px; background: var(--ink);
+  color: white; border-radius: 12px;
+}
+.nt-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px; color: var(--accent4); letter-spacing: 2px;
+  text-transform: uppercase; margin-bottom: 12px;
+}
+.next-teaser h3 { color: white; margin: 0 0 12px; font-size: 22px; }
+.next-teaser p { color: rgba(255,255,255,0.7); margin-bottom: 12px; }
+.cliffhanger {
+  margin-top: 16px; padding: 16px 20px;
+  border-left: 3px solid var(--accent);
+  background: rgba(255,255,255,0.05);
+  font-style: italic; color: rgba(255,255,255,0.9);
+  font-size: 15px; line-height: 1.7;
+}
+
+/* ── FLOW CARD ── */
+.flow-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin: 24px 0; }
+.flow-card {
+  background: var(--warm); border: 1px solid var(--border);
+  border-radius: 10px; padding: 16px; text-align: center;
+  transition: all 0.2s;
+}
+.flow-card:hover { border-color: var(--accent2); transform: translateY(-2px); }
+.flow-card .fc-icon { font-size: 28px; margin-bottom: 8px; }
+.flow-card .fc-name {
+  font-family: 'Bricolage Grotesque', sans-serif;
+  font-size: 14px; font-weight: 800; margin-bottom: 4px;
+}
+.flow-card .fc-desc { font-size: 12px; color: var(--muted); line-height: 1.5; }
+
+/* ── PIPELINE VISUAL ── */
+.pipeline {
+  display: flex; gap: 0; margin: 28px 0; align-items: center; flex-wrap: wrap;
+}
+.pipe-step {
+  background: var(--ink); color: white;
+  padding: 12px 16px; border-radius: 8px;
+  font-family: 'Bricolage Grotesque', sans-serif;
+  font-size: 13px; font-weight: 700; text-align: center; flex: 1;
+  min-width: 90px;
+}
+.pipe-step .ps-icon { font-size: 20px; display: block; margin-bottom: 4px; }
+.pipe-step.accent { background: var(--accent); }
+.pipe-step.accent2 { background: var(--accent2); }
+.pipe-step.accent3 { background: #6b21a8; }
+.pipe-step.accent4 { background: var(--accent4); color: var(--ink); }
+.pipe-arrow { color: var(--muted); font-size: 20px; padding: 0 4px; flex-shrink: 0; }
+
+/* ── COLLAPSE ── */
+.collapse-section { margin: 16px 0; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+.collapse-header {
+  padding: 14px 18px; background: var(--warm);
+  cursor: pointer; display: flex; justify-content: space-between; align-items: center;
+  font-family: 'Bricolage Grotesque', sans-serif; font-size: 15px; font-weight: 700;
+  user-select: none;
+}
+.collapse-header:hover { background: var(--border); }
+.collapse-icon { font-size: 18px; transition: transform 0.2s; }
+.collapse-header.open .collapse-icon { transform: rotate(180deg); }
+.collapse-body { display: none; padding: 18px 20px; border-top: 1px solid var(--border); }
+.collapse-body.open { display: block; }
+
+/* ── TABS ── */
+.tab-container { margin: 28px 0; }
+.tab-buttons { display: flex; gap: 0; border-bottom: 2px solid var(--border); margin-bottom: 0; }
+.tab-btn {
+  font-family: 'Bricolage Grotesque', sans-serif;
+  font-size: 14px; font-weight: 700;
+  padding: 10px 20px; border: none; background: none;
+  color: var(--muted); cursor: pointer; border-bottom: 3px solid transparent;
+  margin-bottom: -2px; transition: all 0.2s;
+}
+.tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+.tab-btn:hover { color: var(--ink); }
+.tab-panel { display: none; padding: 24px 0; }
+.tab-panel.active { display: block; }
+
+/* ── SESSION-SPECIFIC: three-tier badge ── */
+.tier-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin: 24px 0; }
+.tier-card {
+  border-radius: 10px; padding: 18px 16px; text-align: center;
+  border: 2px solid transparent; transition: all 0.2s; cursor: default;
+}
+.tier-card.genai { background: #fff8f0; border-color: var(--accent4); }
+.tier-card.agent { background: #f0f7ff; border-color: #74b9ff; }
+.tier-card.agentic { background: var(--win); border-color: var(--accent2); }
+.tier-card .t-icon { font-size: 30px; margin-bottom: 8px; }
+.tier-card .t-name {
+  font-family: 'Bricolage Grotesque', sans-serif;
+  font-size: 15px; font-weight: 800; margin-bottom: 6px;
+}
+.tier-card.genai .t-name { color: var(--accent4); }
+.tier-card.agent .t-name { color: #2563eb; }
+.tier-card.agentic .t-name { color: var(--accent2); }
+.tier-card .t-desc { font-size: 12px; color: var(--muted); line-height: 1.5; }
+</style>
+
+</head>
+<body>
+
+<div class="progress-strip"><div class="progress-fill" id="pf"></div></div>
+
+<nav class="topnav">
+  <span class="nav-session-label">// Agentic AI · Session 4</span>
+  <div class="nav-chapters">
+    <button class="nav-ch active" onclick="goTo(0)">01 · The Cliffhanger</button>
+    <button class="nav-ch" onclick="goTo(1)">02 · Reactive vs Deliberative</button>
+    <button class="nav-ch" onclick="goTo(2)">03 · BDI</button>
+    <button class="nav-ch" onclick="goTo(3)">04 · Layered / Hybrid</button>
+    <button class="nav-ch" onclick="goTo(4)">05 · CoALA</button>
+    <button class="nav-ch" onclick="goTo(5)">06 · Design Patterns</button>
+    <button class="nav-ch" onclick="goTo(6)">07 · System Design v2</button>
+    <button class="nav-ch" onclick="goTo(7)">08 · Build It + Quiz</button>
+    <button class="nav-ch" onclick="goTo(8)">09 · Recap</button>
+  </div>
+  <span class="nav-right" id="ch-counter">1 / 9</span>
+</nav>
+
+<main class="main">
+
+<div class="chapter active" id="ch0">
+  <div class="ch-hero">
+    <div class="ch-number">Chapter 01</div>
+    <h1 class="ch-title">CodeSentinel <span class="accent">Can Remember.</span> Should It Decide Everything Itself?</h1>
+    <p class="ch-subtitle">Session 3 ended on three unresolved questions, on purpose. Today we give them names — and fix two of them for real.</p>
+    <div class="ch-objectives">
+      <div class="obj-title">By the end of this session you can</div>
+      <ul>
+        <li>Name which architecture CodeSentinel's current <code>agent → tools → agent</code> loop actually is</li>
+        <li>Explain why "one node calling itself" is not automatically an architecture on its own</li>
+        <li>Fix the all-or-nothing approval gate with a tiered, risk-based layer</li>
+        <li>Stop <code>search_memory(kind="author_history")</code> from running with zero oversight</li>
+        <li>Add a Reflection pass before <code>post_pr_comment</code>, so CodeSentinel critiques itself before a human ever sees the draft</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="story-box">
+    <div class="story-label">Where we left off</div>
+    <p>Last session, PR #11 landed. <code>search_memory(kind="author_history", author="rahul8879")</code> got called unprompted, found the PR #10 finding by embedding similarity, and the posted comment on PR #11 referenced the repeated pattern. That worked. Real, agentic, cross-session recall.</p>
+    <p>But the same session flagged three things we didn't fix, and left them for tonight:</p>
+  </div>
+
+  <div class="evolution">
+    <div class="evo-step">
+      <div class="evo-num pain">1</div>
+      <div class="evo-content">
+        <h4>Approval is all-or-nothing per turn</h4>
+        <p>Right now there's exactly one gate — <code>post_pr_comment</code> pauses, everything else runs free. That was fine when the only sensitive action was "post publicly." It stops being fine the moment we add tools with different risk levels that all currently share the same "no approval needed" bucket.</p>
+      </div>
+    </div>
+    <div class="evo-step">
+      <div class="evo-num pain">2</div>
+      <div class="evo-content">
+        <h4>Read-only tools run with zero oversight — including one that profiles a person</h4>
+        <p><code>search_memory(kind="author_history", author="rahul8879")</code> is, functionally, pulling up a dossier on a specific human being's past mistakes. It's read-only, so our current design treats it as harmless. Is it?</p>
+      </div>
+    </div>
+    <div class="evo-step">
+      <div class="evo-num warn">3</div>
+      <div class="evo-content">
+        <h4>Is "one agent node calling itself in a loop" even an architecture?</h4>
+        <p>Or is the tool list itself doing all the architectural work, and the loop is just plumbing? This is the one we need vocabulary for before we can answer it honestly.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="pain-box">
+    <div class="pain-label">Say this part out loud in class</div>
+    <p>None of tonight's architectures are new code. Every single one of them is a different LENS on the exact CodeSentinel build sitting in front of you right now. By the end of the session, the same six tools — <code>get_pr_details</code>, <code>get_pr_files</code>, <code>get_file_content</code>, <code>post_pr_comment</code>, <code>search_memory</code>, <code>save_finding</code> — will look different depending which architecture you're viewing them through.</p>
+  </div>
+
+  <div class="ch-nav">
+    <div></div>
+    <button class="ch-btn primary" onclick="goTo(1)">Next <small>Reactive vs Deliberative</small></button>
+  </div>
+</div>
+
+<div class="chapter" id="ch1">
+  <div class="ch-hero">
+    <div class="ch-number">Chapter 02</div>
+    <h1 class="ch-title">Reactive <span class="accent">vs</span> Deliberative</h1>
+    <p class="ch-subtitle">The two oldest, simplest architectures in AI — and CodeSentinel already has a piece of each, whether we named it or not.</p>
+  </div>
+
+  <div class="comp-grid">
+    <div class="comp-card">
+      <div class="comp-icon">⚡</div>
+      <div class="comp-name">Reactive</div>
+      <p>No world model, no memory, no planning. A direct rule: condition seen → fixed action taken. Instant, cheap, can't be talked out of it.</p>
+    </div>
+    <div class="comp-card">
+      <div class="comp-icon">🧠</div>
+      <div class="comp-name">Deliberative</div>
+      <p>Builds a model of the situation, sets a goal, plans a sequence of steps, then acts. Slower, costlier, but can handle novel situations the reactive rule never anticipated.</p>
+    </div>
+  </div>
+
+  <h3>The Reactive layer CodeSentinel doesn't have yet — but should</h3>
+  <div class="pain-box">
+    <div class="pain-label">The gap</div>
+    <p>Right now, if a diff contains a hardcoded AWS key, CodeSentinel finds out about it the SAME way it finds out about a missing docstring — by the LLM reading <code>get_file_content</code> output and reasoning about it. That's a Deliberative response to something that should be Reactive: instant, zero-reasoning, can't-be-argued-with.</p>
+  </div>
+
+  <div class="code-block">
+    <div class="code-header">
+      <div class="code-dots"><span class="code-dot dot-r"></span><span class="code-dot dot-y"></span><span class="code-dot dot-g"></span></div>
+      <span class="code-filename">reactive_guard.py</span>
+      <span class="code-tag win-tag">NEW — Session 4</span>
+    </div>
+    <div class="code-body"><pre><span class="ck"># Runs BEFORE the agent loop even starts — zero LLM calls, zero reasoning.</span>
+<span class="ck"># This is a pure Reactive architecture: condition -> fixed action.</span>
+<span class="cp">import</span> re
+
+SECRET_PATTERNS = [
+    r<span class="cg">"AKIA[0-9A-Z]{16}"</span>,               <span class="ck"># AWS access key</span>
+    r<span class="cg">"sk-[a-zA-Z0-9]{32,}"</span>,             <span class="ck"># OpenAI-style secret key</span>
+    r<span class="cg">"-----BEGIN PRIVATE KEY-----"</span>,
+]
+
+<span class="cp">def</span> <span class="cb">reactive_guard</span>(diff_text: str) -> dict:
+    <span class="cy">"""No LLM call. No memory read. No plan. Just: pattern found -> block."""</span>
+    <span class="cp">for</span> pattern <span class="cp">in</span> SECRET_PATTERNS:
+        <span class="cp">if</span> re.search(pattern, diff_text):
+            <span class="cp">return</span> {<span class="cg">"blocked"</span>: <span class="cm">True</span>, <span class="cg">"reason"</span>: <span class="cg">f"matched {pattern}"</span>}
+    <span class="cp">return</span> {<span class="cg">"blocked"</span>: <span class="cm">False</span>}</pre></div>
+  </div>
+
+  <h3>The Deliberative part CodeSentinel already had</h3>
+  <p>Every time the agent calls <code>get_pr_details</code>, then <code>get_pr_files</code>, then reasons about which files matter before calling <code>get_file_content</code> — that's Deliberative behaviour. It built an internal picture (world model) of the PR before acting. We just never named it.</p>
+
+  <div class="compare">
+    <div class="compare-card bad">
+      <div class="c-label">Reactive alone — fails</div>
+      <p>Would catch the hardcoded key. Would completely miss "this PR introduces an N+1 query" — that needs reasoning over multiple files, which no fixed rule can express.</p>
+    </div>
+    <div class="compare-card good">
+      <div class="c-label">Deliberative alone — fails differently</div>
+      <p>Would eventually catch the hardcoded key too — but only after several LLM calls and real latency, for something that needed zero intelligence to catch.</p>
+    </div>
+  </div>
+
+  <div class="win-box">
+    <div class="win-label">The actual fix</div>
+    <p>Neither replaces the other. Put the Reactive guard in front, as a fast, cheap, non-negotiable filter. Let the Deliberative agent loop handle everything the guard doesn't block. This pairing is called a <b>Layered architecture</b> — Chapter 04.</p>
+  </div>
+
+  <div class="ch-nav">
+    <button class="ch-btn" onclick="goTo(0)"><small>← Previous</small> The Cliffhanger</button>
+    <button class="ch-btn primary" onclick="goTo(2)">Next <small>BDI</small></button>
+  </div>
+</div>
+
+<div class="chapter" id="ch2">
+  <div class="ch-hero">
+    <div class="ch-number">Chapter 03</div>
+    <h1 class="ch-title">BDI — <span class="accent2">Beliefs, Desires, Intentions</span></h1>
+    <p class="ch-subtitle">This is the piece that maps directly onto Session 3's memory tables — almost embarrassingly directly.</p>
+  </div>
+
+  <div class="tier-row">
+    <div class="tier-card genai">
+      <div class="t-icon">💭</div>
+      <div class="t-name">Beliefs</div>
+      <div class="t-desc">What the agent currently thinks is true — pulled straight from <code>search_memory</code> results</div>
+    </div>
+    <div class="tier-card agent">
+      <div class="t-icon">🎯</div>
+      <div class="t-name">Desires</div>
+      <div class="t-desc">Goals it holds — possibly in tension with each other</div>
+    </div>
+    <div class="tier-card agentic">
+      <div class="t-icon">✅</div>
+      <div class="t-name">Intentions</div>
+      <div class="t-desc">The committed plan of action for this specific PR</div>
+    </div>
+  </div>
+
+  <div class="story-box">
+    <div class="story-label">Mapped to the real PR #11 run</div>
+    <p><b>Belief:</b> <code>search_memory(kind="author_history", author="rahul8879")</code> returns "this author left a SQL injection risk in PR #10, same file pattern." That's a belief, literally fetched from Postgres.</p>
+    <p><b>Desire (conflict):</b> Desire A = "flag every recurring risk, no matter how minor." Desire B = "don't slow down a hotfix PR tagged <code>urgent</code>." These two desires actively disagree on PR #11 if it's also tagged urgent.</p>
+    <p><b>Intention:</b> the resolved, committed choice — e.g. "post a comment referencing the pattern, but don't block the merge." This is what <code>post_pr_comment</code> actually sends, after the conflict above got resolved one way.</p>
+  </div>
+
+  <div class="pain-box">
+    <div class="pain-label">The uncomfortable part</div>
+    <p>Right now, CodeSentinel has no explicit Desire-conflict step. It just... goes with whatever the single LLM call decides in the moment, with no visibility into which desire won. That's not wrong, but it's not principled either — there's no <code>resolve_conflict()</code> anywhere in the trace.</p>
+  </div>
+
+  <div class="code-block">
+    <div class="code-header">
+      <div class="code-dots"><span class="code-dot dot-r"></span><span class="code-dot dot-y"></span><span class="code-dot dot-g"></span></div>
+      <span class="code-filename">bdi_intention.py</span>
+      <span class="code-tag win-tag">NEW — Session 4</span>
+    </div>
+    <div class="code-body"><pre><span class="ck"># Makes the Desire conflict EXPLICIT instead of buried inside one LLM call.</span>
+<span class="cp">def</span> <span class="cb">form_intention</span>(beliefs: dict, pr_labels: list[str]) -> str:
+    urgent = <span class="cg">"urgent"</span> <span class="cp">in</span> pr_labels
+    has_recurring_risk = beliefs.get(<span class="cg">"author_history"</span>) <span class="cp">is not None</span>
+
+    <span class="ck"># Desire A: flag every recurring risk   Desire B: don't slow down urgent PRs</span>
+    <span class="cp">if</span> has_recurring_risk <span class="cp">and</span> urgent:
+        <span class="cp">return</span> <span class="cg">"comment_dont_block"</span>   <span class="ck"># explicit resolution, not implicit</span>
+    <span class="cp">elif</span> has_recurring_risk:
+        <span class="cp">return</span> <span class="cg">"comment_and_request_changes"</span>
+    <span class="cp">else</span>:
+        <span class="cp">return</span> <span class="cg">"standard_review"</span></pre></div>
+  </div>
+
+  <p>This single function is what separates "BDI as a diagram on a slide" from "BDI actually implemented" — it's the one place in the whole codebase where you can point and say <i>this is where competing goals get weighed against each other.</i></p>
+
+  <div class="ch-nav">
+    <button class="ch-btn" onclick="goTo(1)"><small>← Previous</small> Reactive vs Deliberative</button>
+    <button class="ch-btn primary" onclick="goTo(3)">Next <small>Layered / Hybrid</small></button>
+  </div>
+</div>
+
+<div class="chapter" id="ch3">
+  <div class="ch-hero">
+    <div class="ch-number">Chapter 04</div>
+    <h1 class="ch-title">Layered / Hybrid — <span class="accent3">Fixing the All-or-Nothing Gate</span></h1>
+    <p class="ch-subtitle">This is where open question #1 and #2 from Chapter 01 actually get solved, not just named.</p>
+  </div>
+
+  <p>A Layered architecture stacks the Reactive guard from Chapter 02 underneath a Sequencer (fixed routine steps) underneath the Deliberative agent loop — each layer can act, and a higher layer can override a lower one.</p>
+
+  <div class="pipeline">
+    <div class="pipe-step accent">⚡<br>Reactive Guard<br><small style="font-weight:400;font-size:11px;">secret scan, instant</small></div>
+    <div class="pipe-arrow">→</div>
+    <div class="pipe-step accent3">📋<br>Sequencer<br><small style="font-weight:400;font-size:11px;">fixed checklist</small></div>
+    <div class="pipe-arrow">→</div>
+    <div class="pipe-step accent2">🧠<br>Deliberative Loop<br><small style="font-weight:400;font-size:11px;">agent ↔ tools</small></div>
+  </div>
+
+  <h3>Fix #1 — Tiered approval instead of one gate</h3>
+  <div class="win-box">
+    <div class="win-label">The actual change to the graph</div>
+    <p>Instead of one binary "approve <code>post_pr_comment</code> or don't," every tool now carries a risk tier. Only <b>Tier 2</b> tools pause for human approval — same as before for <code>post_pr_comment</code>, but now <code>save_finding</code> on a NEW author (never seen before, no prior beliefs to check against) also gets gated, since a wrong first entry poisons every future review of that person.</p>
+  </div>
+
+  <div class="code-block">
+    <div class="code-header">
+      <div class="code-dots"><span class="code-dot dot-r"></span><span class="code-dot dot-y"></span><span class="code-dot dot-g"></span></div>
+      <span class="code-filename">risk_tiers.py</span>
+      <span class="code-tag win-tag">NEW — Session 4</span>
+    </div>
+    <div class="code-body"><pre><span class="ck"># Replaces the single hardcoded "only post_pr_comment needs approval" rule</span>
+<span class="ck"># from Session 3 with a tiered lookup, checked in the graph's interrupt condition.</span>
+RISK_TIER = {
+    <span class="cg">"get_pr_details"</span>:      <span class="co">0</span>,  <span class="ck"># read-only, public data, no oversight needed</span>
+    <span class="cg">"get_pr_files"</span>:        <span class="co">0</span>,
+    <span class="cg">"get_file_content"</span>:    <span class="co">0</span>,
+    <span class="cg">"search_memory"</span>:       <span class="co">1</span>,  <span class="ck"># NEW: elevated when kind == "author_history"</span>
+    <span class="cg">"save_finding"</span>:        <span class="co">1</span>,  <span class="ck"># elevated only for first-time authors, see below</span>
+    <span class="cg">"post_pr_comment"</span>:     <span class="co">2</span>,  <span class="ck"># unchanged from Session 3 — always gated</span>
+}
+
+<span class="cp">def</span> <span class="cb">needs_approval</span>(tool_name: str, tool_args: dict, seen_authors: set) -> bool:
+    tier = RISK_TIER.get(tool_name, <span class="co">2</span>)  <span class="ck"># unknown tool defaults to MOST cautious tier</span>
+    <span class="cp">if</span> tool_name == <span class="cg">"search_memory"</span> <span class="cp">and</span> tool_args.get(<span class="cg">"kind"</span>) == <span class="cg">"author_history"</span>:
+        <span class="cp">return</span> <span class="cm">True</span>   <span class="ck"># Fix #2 — see below</span>
+    <span class="cp">if</span> tool_name == <span class="cg">"save_finding"</span> <span class="cp">and</span> tool_args.get(<span class="cg">"author"</span>) <span class="cp">not in</span> seen_authors:
+        <span class="cp">return</span> <span class="cm">True</span>  <span class="ck"># first-ever finding on this person — worth a human glance</span>
+    <span class="cp">return</span> tier >= <span class="co">2</span></pre></div>
+  </div>
+
+  <h3>Fix #2 — The profiling concern, named and handled</h3>
+  <div class="pain-box">
+    <div class="pain-label">Say this part out loud in class</div>
+    <p><code>search_memory(kind="author_history", author="rahul8879")</code> pulling up someone's mistake history, silently, every single PR, with no log a human ever sees — that's the exact shape of "quiet profiling," even with entirely good intentions behind it. The fix above doesn't remove the capability. It makes every use of it visible and consent-gated, which is the honest trade-off: slightly slower, meaningfully more accountable.</p>
+  </div>
+
+  <h3>Is this actually different from just "more if-statements"?</h3>
+  <div class="compare">
+    <div class="compare-card neutral">
+      <div class="c-label">What it looks like</div>
+      <p>Yes — mechanically, <code>needs_approval()</code> is an if-statement. Layered architecture isn't a new algorithm; it's a naming convention for WHERE control decisions live, so a team of engineers can reason about them explicitly instead of them being buried inside one giant prompt.</p>
+    </div>
+    <div class="compare-card good">
+      <div class="c-label">Why it's worth naming anyway</div>
+      <p>Before this session, "should this be gated?" was answered implicitly by the LLM's judgment on that one turn. Now it's answered by a testable, versioned Python function that a code reviewer can actually review — that's the entire value of calling it an architecture instead of a vibe.</p>
+    </div>
+  </div>
+
+  <div class="ch-nav">
+    <button class="ch-btn" onclick="goTo(2)"><small>← Previous</small> BDI</button>
+    <button class="ch-btn primary" onclick="goTo(4)">Next <small>CoALA</small></button>
+  </div>
+</div>
+
+<div class="chapter" id="ch4">
+  <div class="ch-hero">
+    <div class="ch-number">Chapter 05</div>
+    <h1 class="ch-title">CoALA — <span class="accent2">Is CodeSentinel Already This?</span></h1>
+    <p class="ch-subtitle">Answering Chapter 01's third open question: is the tool list itself the architecture?</p>
+  </div>
+
+  <p>CoALA (Cognitive Architectures for Language Agents) names four memory modules and a decision procedure. The uncomfortable exercise: map CodeSentinel's ACTUAL code onto it, and see what's genuinely there versus what we're pretending is there.</p>
+
+  <table>
+    <thead><tr><th>CoALA module</th><th>Honest mapping to CodeSentinel</th><th>Real or aspirational?</th></tr></thead>
+    <tbody>
+      <tr><td>Working memory</td><td>The current LangGraph state — this PR's diff, files, in-flight reasoning</td><td class="green">Real</td></tr>
+      <tr><td>Episodic memory</td><td><code>search_memory(kind="author_history")</code> against <code>PostgresStore</code></td><td class="green">Real</td></tr>
+      <tr><td>Semantic memory</td><td>The 3 preloaded coding standards from Session 3</td><td class="green">Real</td></tr>
+      <tr><td>Procedural memory</td><td>The 3 <code>SKILL.md</code> files loaded from disk</td><td class="green">Real</td></tr>
+      <tr><td>Decision procedure (Propose–Evaluate–Select)</td><td>One LLM call decides tool calls implicitly. There's no separate "propose 3 options, evaluate each, select one" step anywhere in the graph.</td><td class="red">Aspirational</td></tr>
+    </tbody>
+  </table>
+
+  <div class="pain-box">
+    <div class="pain-label">The honest answer to Chapter 01's question</div>
+    <p>CodeSentinel has three of CoALA's four memory modules for real, in production code. But it does NOT have a real decision procedure — that part is still just "one prompt, one LLM call, hope it reasons well." So: is the tool list itself the architecture? <b>Partly.</b> The memory side genuinely earns the CoALA label. The reasoning side is still a single opaque LLM call wearing a CoALA costume.</p>
+  </div>
+
+  <h3>What a real Decision Procedure would add</h3>
+  <div class="code-block">
+    <div class="code-header">
+      <div class="code-dots"><span class="code-dot dot-r"></span><span class="code-dot dot-y"></span><span class="code-dot dot-g"></span></div>
+      <span class="code-filename">decision_procedure.py</span>
+      <span class="code-tag">Not built yet — flagged honestly</span>
+    </div>
+    <div class="code-body"><pre><span class="ck"># This is the gap. Propose multiple candidate actions explicitly,</span>
+<span class="ck"># evaluate each against current beliefs, THEN select — instead of</span>
+<span class="ck"># one LLM call doing propose+evaluate+select invisibly in one shot.</span>
+<span class="cp">def</span> <span class="cb">propose_actions</span>(beliefs: dict) -> list[str]:
+    <span class="cp">return</span> [<span class="cg">"deep_security_review"</span>, <span class="cg">"quick_style_pass"</span>, <span class="cg">"request_human_clarification"</span>]
+
+<span class="cp">def</span> <span class="cb">evaluate</span>(action: str, beliefs: dict) -> float:
+    <span class="ck"># scoring function, not yet implemented — this is next session's problem</span>
+    <span class="cp">raise</span> NotImplementedError</pre></div>
+  </div>
+
+  <div class="win-box">
+    <div class="win-label">Why we're not building this tonight</div>
+    <p>A real Propose-Evaluate-Select loop needs a scoring function that actually captures what "good" means for a code review — that's a genuinely hard design problem, not a 20-minute fix. Flagging it honestly is more useful than faking it with a fourth LLM call that just relabels the same single decision as three steps.</p>
+  </div>
+
+  <div class="ch-nav">
+    <button class="ch-btn" onclick="goTo(3)"><small>← Previous</small> Layered / Hybrid</button>
+    <button class="ch-btn primary" onclick="goTo(5)">Next <small>Design Patterns</small></button>
+  </div>
+</div>
+
+<div class="chapter" id="ch5">
+  <div class="ch-hero">
+    <div class="ch-number">Chapter 06</div>
+    <h1 class="ch-title">Design Patterns — <span class="accent">Planning</span>, <span class="accent2">ReAct</span>, <span class="accent3">Tool Use</span>, <span class="accent4">Reflection</span></h1>
+    <p class="ch-subtitle">Architectures are the blueprint. These four are the reusable techniques living INSIDE that blueprint — and CodeSentinel already uses two of them, whether we named it or not.</p>
+  </div>
+
+  <div class="tab-container">
+    <div class="tab-buttons">
+      <button class="tab-btn active" onclick="switchTab(this,'planning')">Planning</button>
+      <button class="tab-btn" onclick="switchTab(this,'react')">ReAct</button>
+      <button class="tab-btn" onclick="switchTab(this,'tooluse')">Tool Use</button>
+      <button class="tab-btn" onclick="switchTab(this,'reflection')">Reflection</button>
+    </div>
+
+    <div class="tab-panel active" id="tab-planning">
+      <h3>Planning — the pattern CodeSentinel does NOT currently use, and why that's fine</h3>
+      <p>Planning means: decide the full sequence of steps upfront, execute in fixed order, no re-thinking mid-way. CodeSentinel never does this — every PR gets the same free-form <code>agent → tools → agent</code> loop, whether it's a one-line README fix or a five-file security-sensitive change.</p>
+      <div class="pain-box">
+        <div class="pain-label">The cost of not having this</div>
+        <p>A trivial docs-only PR still pays for a full reasoning loop — the LLM decides, on its own, that it only needs <code>get_pr_files</code> and can skip <code>get_file_content</code>. That's usually the right call, but it's non-deterministic: two identical docs-only PRs could take a different number of LLM calls.</p>
+      </div>
+      <div class="code-block">
+        <div class="code-header">
+          <div class="code-dots"><span class="code-dot dot-r"></span><span class="code-dot dot-y"></span><span class="code-dot dot-g"></span></div>
+          <span class="code-filename">planning_fast_path.py</span>
+          <span class="code-tag win-tag">NEW — Session 4, optional optimization</span>
+        </div>
+        <div class="code-body"><pre><span class="ck"># Fixed plan for the ONE case we know in advance: docs-only PRs.</span>
+<span class="ck"># Skips the agent loop entirely -- cheaper, deterministic, predictable.</span>
+<span class="cp">def</span> <span class="cb">is_docs_only</span>(pr_files: list[str]) -> bool:
+    <span class="cp">return</span> <span class="cm">all</span>(f.endswith((<span class="cg">".md"</span>, <span class="cg">".txt"</span>, <span class="cg">".rst"</span>)) <span class="cp">for</span> f <span class="cp">in</span> pr_files)
+
+<span class="cp">def</span> <span class="cb">docs_only_plan</span>(pr_number: int) -> list[str]:
+    <span class="ck"># fixed, 2-step plan -- never calls the full agent loop</span>
+    <span class="cp">return</span> [<span class="cg">"get_pr_files"</span>, <span class="cg">"post_pr_comment"</span>]</pre></div>
+      </div>
+    </div>
+
+    <div class="tab-panel" id="tab-react">
+      <h3>ReAct — the pattern CodeSentinel has been running since Session 2, unnamed</h3>
+      <p>ReAct = Thought → Action → Observation, looped, until the model decides it has enough to stop. That IS the <code>agent → tools → agent</code> loop, verbatim. We're not adding this pattern — we're finally naming what's already there.</p>
+      <div class="code-block">
+        <div class="code-header">
+          <div class="code-dots"><span class="code-dot dot-r"></span><span class="code-dot dot-y"></span><span class="code-dot dot-g"></span></div>
+          <span class="code-filename">react_loop.py</span>
+          <span class="code-tag">Same loop as Session 2/3 — annotated as ReAct</span>
+        </div>
+        <div class="code-body"><pre><span class="cp">from</span> langgraph.graph <span class="cp">import</span> StateGraph, END
+
+<span class="cp">def</span> <span class="cb">agent_node</span>(state):
+    <span class="ck"># THOUGHT: the LLM reasons over messages so far, decides next ACTION</span>
+    response = llm_with_tools.invoke(state[<span class="cg">"messages"</span>])
+    <span class="cp">return</span> {<span class="cg">"messages"</span>: [response]}
+
+<span class="cp">def</span> <span class="cb">tools_node</span>(state):
+    <span class="ck"># ACTION -> OBSERVATION: run whichever tool the LLM picked, feed result back</span>
+    last = state[<span class="cg">"messages"</span>][-<span class="co">1</span>]
+    results = [run_tool(call) <span class="cp">for</span> call <span class="cp">in</span> last.tool_calls]
+    <span class="cp">return</span> {<span class="cg">"messages"</span>: results}
+
+graph = StateGraph(AgentState)
+graph.add_node(<span class="cg">"agent"</span>, agent_node)
+graph.add_node(<span class="cg">"tools"</span>, tools_node)
+graph.set_entry_point(<span class="cg">"agent"</span>)
+graph.add_conditional_edges(<span class="cg">"agent"</span>, should_continue, {<span class="cg">"tools"</span>: <span class="cg">"tools"</span>, <span class="cg">"end"</span>: END})
+graph.add_edge(<span class="cg">"tools"</span>, <span class="cg">"agent"</span>)  <span class="ck"># <- THIS edge is the entire ReAct pattern</span></pre></div>
+      </div>
+      <div class="win-box">
+        <div class="win-label">The one-line answer to give if asked in an interview</div>
+        <p>"CodeSentinel's core loop is a ReAct agent — its architecture is CoALA-shaped (real episodic/semantic/procedural memory), with a Reactive guardrail layer in front and a tiered BDI-style approval system deciding what needs a human."</p>
+      </div>
+    </div>
+
+    <div class="tab-panel" id="tab-tooluse">
+      <h3>Tool Use — what Session 2/3's tools got right (and the one thing to fix)</h3>
+      <p><code>get_pr_details</code>, <code>get_pr_files</code>, <code>get_file_content</code>, <code>post_pr_comment</code>, <code>search_memory</code>, <code>save_finding</code> — six tools, each single-purpose, each with a clear docstring the LLM reads to decide relevance. That's good tool design, already.</p>
+      <table>
+        <thead><tr><th>Rule</th><th>Where CodeSentinel already follows it</th></tr></thead>
+        <tbody>
+          <tr><td>Narrow, single-purpose</td><td><code>get_file_content</code> only fetches one file — no tool tries to "do the whole review"</td></tr>
+          <tr><td>Typed schema</td><td><code>search_memory(kind, query, author)</code> — <code>kind</code> is a fixed set of literals, not free text</td></tr>
+          <tr><td>Structured, parseable output</td><td>Postgres <code>store</code> results come back as structured JSON, not a paragraph</td></tr>
+        </tbody>
+      </table>
+      <div class="pain-box">
+        <div class="pain-label">The one gap</div>
+        <p><code>save_finding</code> has no code-level duplicate check — flagged already in Session 3 as an open risk. Good tool design also means the tool itself should refuse bad calls, not rely purely on the docstring saying "only if genuinely new."</p>
+      </div>
+    </div>
+
+    <div class="tab-panel" id="tab-reflection">
+      <h3>Reflection — the pattern we're adding tonight, for real</h3>
+      <p>Right now, whatever <code>post_pr_comment</code> drafts goes straight to human approval with zero self-critique. Reflection adds one more LLM call BEFORE that approval step — a separate "critic" pass, checking tone, missed issues, and false confidence.</p>
+      <div class="code-block">
+        <div class="code-header">
+          <div class="code-dots"><span class="code-dot dot-r"></span><span class="code-dot dot-y"></span><span class="code-dot dot-g"></span></div>
+          <span class="code-filename">reflect_before_posting.py</span>
+          <span class="code-tag win-tag">NEW — Session 4</span>
+        </div>
+        <div class="code-body"><pre><span class="ck"># Slots in right before the existing post_pr_comment approval gate.</span>
+<span class="cp">def</span> <span class="cb">critique_draft</span>(draft_comment: str, diff: str) -> dict:
+    prompt = <span class="cg">f"""You are a senior engineer critiquing a junior reviewer's PR comment.
+Diff: {diff}
+Draft: {draft_comment}
+Check: tone too harsh/soft? missed security issue? vague, no line refs?
+If good enough to post, reply exactly APPROVED. Otherwise list fixes."""</span>
+    result = llm.invoke(prompt)
+    approved = result.content.strip().upper().startswith(<span class="cg">"APPROVED"</span>)
+    <span class="cp">return</span> {<span class="cg">"approved"</span>: approved, <span class="cg">"critique"</span>: result.content}
+
+<span class="ck"># Graph change: draft -> critique -> (approved? go to human gate : refine -> critique)</span>
+<span class="ck"># Capped at 2 rounds -- matches the "over-analysis paralysis" weakness we</span>
+<span class="ck"># already flagged as an open risk for save_finding duplicates in Ch.05.</span></pre></div>
+      </div>
+      <div class="win-box">
+        <div class="win-label">Where the critique gets stored</div>
+        <p>If a round is rejected, the critique itself gets written to <code>save_finding</code>'s procedural namespace — so the SAME class of drafting mistake (e.g. "too harsh in tone") doesn't need to be re-caught by the critic every single time. That's Reflection feeding directly back into Session 3's memory system.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="ch-nav">
+    <button class="ch-btn" onclick="goTo(4)"><small>← Previous</small> CoALA</button>
+    <button class="ch-btn primary" onclick="goTo(6)">Next <small>System Design v2</small></button>
+  </div>
+</div>
+
+<div class="chapter" id="ch6">
+  <div class="ch-hero">
+    <div class="ch-number">Chapter 07</div>
+    <h1 class="ch-title">CodeSentinel v2 — <span class="accent2">Full System Design</span></h1>
+    <p class="ch-subtitle">Every chapter tonight, assembled into one real graph. This is what ships.</p>
+  </div>
+
+  <div class="flow-grid">
+    <div class="flow-card"><div class="fc-icon">⚡</div><div class="fc-name">Reactive Guard</div><div class="fc-desc">Secret-pattern scan, zero LLM calls (Ch.02)</div></div>
+    <div class="flow-card"><div class="fc-icon">📋</div><div class="fc-name">Docs-Only Fast Path</div><div class="fc-desc">Fixed Planning route for trivial PRs (Ch.06)</div></div>
+    <div class="flow-card"><div class="fc-icon">🔁</div><div class="fc-name">ReAct Agent Loop</div><div class="fc-desc">agent ↔ tools, CoALA memory-backed (Ch.05/06)</div></div>
+    <div class="flow-card"><div class="fc-icon">🎯</div><div class="fc-name">BDI Intention</div><div class="fc-desc">Explicit desire-conflict resolution (Ch.03)</div></div>
+    <div class="flow-card"><div class="fc-icon">🪞</div><div class="fc-name">Reflection Pass</div><div class="fc-desc">Critic loop before human approval (Ch.06)</div></div>
+    <div class="flow-card"><div class="fc-icon">🚦</div><div class="fc-name">Tiered Approval</div><div class="fc-desc">Risk-based gating, not all-or-nothing (Ch.04)</div></div>
+  </div>
+
+  <div class="code-block">
+    <div class="code-header">
+      <div class="code-dots"><span class="code-dot dot-r"></span><span class="code-dot dot-y"></span><span class="code-dot dot-g"></span></div>
+      <span class="code-filename">codesentinel_v2_flow.txt</span>
+      <span class="code-tag win-tag">Full system, ASCII</span>
+    </div>
+    <div class="code-body"><pre>GitHub webhook (PR opened/updated)
+        │
+        ▼
+┌───────────────────┐   secret pattern found?
+│  Reactive Guard    │ ─────────────────────► Block + alert (END)
+│  (Ch.02, no LLM)   │
+└─────────┬──────────┘
+          │ clean
+          ▼
+┌───────────────────┐   docs-only?
+│  Fast-Path Router  │ ───────────► Planning: get_pr_files → post_pr_comment (END)
+│  (Ch.06 Planning)  │
+└─────────┬──────────┘
+          │ not docs-only
+          ▼
+┌────────────────────────────────────────────┐
+│         ReAct Agent Loop  (CoALA)            │
+│                                                │
+│   agent ──► tools ──► agent ──► ... ──► done  │
+│    │                                           │
+│    reads: working memory (this PR's state)    │
+│           episodic memory  (search_memory)     │◄── Ch.04: gated if
+│           semantic memory  (coding standards)  │    kind=author_history
+│           procedural memory (SKILL.md files)   │
+└─────────────────────┬────────────────────────┘
+                       ▼
+              ┌──────────────────┐
+              │  BDI Intention    │   (Ch.03 — resolves desire conflicts,
+              │  form_intention() │    e.g. urgent PR vs recurring risk)
+              └────────┬─────────┘
+                       ▼
+              ┌──────────────────┐
+              │ Reflection Loop   │   draft → critique → refine (max 2x)
+              │ (Ch.06)           │
+              └────────┬─────────┘
+                       ▼
+              ┌──────────────────────────┐
+              │  Tiered Approval Gate     │   Tier 2: post_pr_comment (always)
+              │  needs_approval() (Ch.04) │   Tier 1: author_history reads,
+              └────────┬─────────────────┘   first-time save_finding
+                       ▼
+              ┌──────────────────┐
+              │  post_pr_comment  │ ──► GitHub
+              └────────┬─────────┘
+                       ▼
+              ┌──────────────────────────┐
+              │  Memory Write (Neon)      │
+              │  save_finding + critique  │
+              │  written to procedural ns │
+              └──────────────────────────┘</pre></div>
+  </div>
+
+  <h3>Shared state (extends Session 3's schema)</h3>
+  <div class="code-block">
+    <div class="code-header">
+      <div class="code-dots"><span class="code-dot dot-r"></span><span class="code-dot dot-y"></span><span class="code-dot dot-g"></span></div>
+      <span class="code-filename">state.py</span>
+    </div>
+    <div class="code-body"><pre><span class="cp">class</span> <span class="cb">CodeSentinelState</span>(TypedDict):
+    pr_number: <span class="cm">int</span>
+    pr_files: <span class="cm">list</span>[<span class="cm">str</span>]
+    messages: Annotated[<span class="cm">list</span>, operator.add]   <span class="ck"># ReAct trace, unchanged from Session 3</span>
+    intention: <span class="cm">str</span>                            <span class="ck"># NEW — BDI resolved action (Ch.03)</span>
+    draft_comment: <span class="cm">str</span>                       <span class="ck"># NEW — pre-reflection draft (Ch.06)</span>
+    critique: <span class="cm">str</span>                            <span class="ck"># NEW — reflection output (Ch.06)</span>
+    reflection_round: <span class="cm">int</span>                    <span class="ck"># NEW — capped at 2 (Ch.06)</span>
+    pending_approval: <span class="cm">dict</span> | <span class="cm">None</span>          <span class="ck"># NEW — tiered gate payload (Ch.04)</span></pre></div>
+  </div>
+
+  <div class="win-box">
+    <div class="win-label">Why this shape, not something fancier</div>
+    <p>The Reactive guard stays first because it's the cheapest possible check and must never be skippable by clever prompting. The fast-path router avoids paying ReAct's latency tax on trivial PRs. Everything else — BDI, Reflection, tiered approval — sits AFTER the agent loop rather than inside it, because each of those is a genuinely separate concern (goal conflict, self-critique, risk gating) and mixing them into one giant prompt is exactly the "one opaque LLM call" problem Chapter 05 called out.</p>
+  </div>
+
+  <div class="ch-nav">
+    <button class="ch-btn" onclick="goTo(5)"><small>← Previous</small> Design Patterns</button>
+    <button class="ch-btn primary" onclick="goTo(7)">Next <small>Build It + Quiz</small></button>
+  </div>
+</div>
+
+<div class="chapter" id="ch7">
+  <div class="ch-hero">
+    <div class="ch-number">Chapter 08</div>
+    <h1 class="ch-title">Build It <span class="accent3">Yourself</span></h1>
+    <p class="ch-subtitle">Today's deliverable upgrades the exact notebook from Session 3 — not a new toy project.</p>
+  </div>
+
+  <div class="handson">
+    <div class="hs-title">🛠️ Deliverable: architected_codesentinel.ipynb</div>
+    <div class="hs-subtitle">DUE BEFORE SESSION 5</div>
+    <ul class="hs-tasks">
+      <li><strong>Reactive guard:</strong> add <code>reactive_guard()</code> as a hard pre-check before your graph's entry point — 3 regex patterns minimum.</li>
+      <li><strong>Tiered approval:</strong> replace your single <code>interrupt_before=["post_pr_comment"]</code> with the <code>needs_approval()</code> lookup from Chapter 04 — at minimum, gate <code>search_memory(kind="author_history")</code> too.</li>
+      <li><strong>BDI intention step:</strong> add <code>form_intention()</code> as its own node, so the desire conflict (urgent label vs. recurring risk) is visible in your tool trace, not buried in one LLM call.</li>
+      <li><strong>Reflection loop:</strong> add a <code>critique_draft()</code> node between your agent's draft output and the approval gate. Cap at 2 rounds.</li>
+      <li><strong>The real test:</strong> open a PR with BOTH a hardcoded fake AWS key AND a recurring bug pattern from a past PR. Confirm in <code>print_tool_trace()</code> that (a) the Reactive guard fires before any LLM call, and (b) the reflection loop runs at least once before <code>post_pr_comment</code> is proposed.</li>
+    </ul>
+  </div>
+
+  <div class="tip-box">
+    <div class="tip-label">No new installs needed</div>
+    <p>Tonight's build is entirely new Python functions and graph edges on top of your existing Session 3 <code>langgraph</code> + <code>langgraph-checkpoint-postgres</code> + <code>langchain-openai</code> stack.</p>
+  </div>
+
+  <div class="quiz-section">
+    <h3>Quick Check</h3>
+
+    <div class="quiz-q">Q1. Why does the Reactive guard run as plain Python, with no LLM call at all, instead of just being the first thing the agent reasons about?</div>
+    <div class="q-options">
+      <button class="q-opt" onclick="ans(this, false, 'LLMs handle regex-detectable patterns fine — that\'s not the reason.')">LLMs can't detect regex patterns reliably</button>
+      <button class="q-opt" onclick="ans(this, true, 'Right. A prompt can be argued with, jailbroken, or occasionally just miss something obvious. A regex match either fires or it doesn\'t — that non-negotiable certainty is the entire point of a Reactive layer.')">A fixed rule can't be reasoned around, argued with, or occasionally missed by an LLM having an off moment</button>
+      <button class="q-opt" onclick="ans(this, false, 'Cost matters, but it\'s a secondary benefit here, not the main reason.')">It's cheaper, and cost is the only consideration</button>
+    </div>
+    <div class="q-feedback"></div>
+
+    <div class="quiz-q">Q2. In the new tiered approval system, why does <code>search_memory(kind="author_history")</code> get gated now, when it wasn't in Session 3?</div>
+    <div class="q-options">
+      <button class="q-opt" onclick="ans(this, false, 'It was always technically capable of this — nothing changed about what the tool CAN do.')">It gained a new technical capability this session</button>
+      <button class="q-opt" onclick="ans(this, true, 'Correct — the tool\'s behaviour never changed. What changed is naming the read as a form of profiling and deciding, deliberately, that even read-only actions with that shape deserve visibility.')">Session 3 didn't classify pulling a person's mistake history as a risk worth flagging — Session 4 explicitly named that as profiling and chose to gate it</button>
+      <button class="q-opt" onclick="ans(this, false, 'Postgres permissions aren\'t the mechanism here — this is an application-level design choice.')">Postgres now enforces row-level security on that table</button>
+    </div>
+    <div class="q-feedback"></div>
+
+    <div class="quiz-q">Q3. What's the honest answer to "is CodeSentinel's tool list itself the architecture, or is the loop?"</div>
+    <div class="q-options">
+      <button class="q-opt" onclick="ans(this, false, 'The loop by itself is just plumbing — it doesn\'t explain WHY those particular tools exist or how memory is structured.')">The loop is the architecture; the tools are interchangeable details</button>
+      <button class="q-opt" onclick="ans(this, true, 'Correct — the memory side (episodic/semantic/procedural) genuinely earns the CoALA name in real code. But the decision-making side is still one opaque LLM call, not a real Propose-Evaluate-Select procedure. Both things are true at once.')">Neither fully — the memory structure earns a real CoALA label, but the decision procedure is still just one LLM call pretending to be more structured than it is</button>
+      <button class="q-opt" onclick="ans(this, false, 'CoALA requires an implemented decision procedure with distinct propose/evaluate/select steps — we explicitly flagged that we don\'t have this yet.')">CodeSentinel fully satisfies CoALA already, no gaps</button>
+    </div>
+    <div class="q-feedback"></div>
+
+    <div class="quiz-q">Q4. True or false — adding the Reflection pattern means <code>post_pr_comment</code> no longer needs human approval, since the critic already checked it.</div>
+    <div class="q-options">
+      <button class="q-opt" onclick="ans(this, false, 'An LLM critiquing another LLM\'s output is still an LLM judgment — it doesn\'t replace a human decision on something irreversible and public.')">True</button>
+      <button class="q-opt" onclick="ans(this, true, 'Correct — Reflection catches more mistakes before a human ever sees the draft, but posting publicly is still irreversible, so the human gate stays. Reflection and human approval solve different problems.')">False</button>
+    </div>
+    <div class="q-feedback"></div>
+  </div>
+
+  <div class="ch-nav">
+    <button class="ch-btn" onclick="goTo(6)"><small>← Previous</small> System Design v2</button>
+    <button class="ch-btn primary" onclick="goTo(8)">Next <small>Recap</small></button>
+  </div>
+</div>
+
+<div class="chapter" id="ch8">
+  <div class="ch-hero">
+    <div class="ch-number">Chapter 09</div>
+    <h1 class="ch-title">What CodeSentinel <span class="accent2">Can Do Now</span></h1>
+    <p class="ch-subtitle">Every concept from tonight, mapped to the exact function you can now point at.</p>
+  </div>
+
+  <table>
+    <thead><tr><th>Concept</th><th>Where it lives in CodeSentinel v2</th></tr></thead>
+    <tbody>
+      <tr><td>Reactive architecture</td><td><code>reactive_guard()</code> — pure regex, runs before the graph entry point</td></tr>
+      <tr><td>Deliberative architecture</td><td>The existing <code>agent</code> node's world-model reasoning over <code>get_pr_details</code>/<code>get_pr_files</code></td></tr>
+      <tr><td>BDI</td><td><code>form_intention()</code> — explicit belief lookup + desire-conflict resolution</td></tr>
+      <tr><td>Layered / Hybrid</td><td>Guard → fast-path router → ReAct loop, each layer able to short-circuit the next</td></tr>
+      <tr><td>CoALA (memory side)</td><td>Working/episodic/semantic/procedural — all real, from Session 3's Postgres build</td></tr>
+      <tr><td>CoALA (decision side)</td><td>Flagged as NOT yet implemented — <code>propose_actions()</code>/<code>evaluate()</code> stubs only</td></tr>
+      <tr><td>Planning pattern</td><td><code>docs_only_plan()</code> — fixed 2-step route for trivial PRs</td></tr>
+      <tr><td>ReAct pattern</td><td>The core <code>agent → tools → agent</code> loop, unchanged since Session 2, now named</td></tr>
+      <tr><td>Tool Use principles</td><td>All 6 existing tools already followed the rules; <code>save_finding</code>'s missing duplicate-check flagged as the one gap</td></tr>
+      <tr><td>Reflection pattern</td><td><code>critique_draft()</code> — new critic node before the approval gate, capped at 2 rounds</td></tr>
+      <tr><td>Tiered approval</td><td><code>needs_approval()</code> replaces the Session 3 single hardcoded gate</td></tr>
+    </tbody>
+  </table>
+
+  <div class="next-teaser">
+    <div class="nt-label">Next Session · Evaluation &amp; Observability</div>
+    <h3>CodeSentinel Has Structure Now. How Do We Know If It's Actually Good?</h3>
+    <p>Tonight fixed HOW CodeSentinel decides. It didn't touch whether its decisions are any good. Left on the table, on purpose:</p>
+    <div class="cliffhanger">
+      The Reflection critic is itself an LLM judging another LLM — what happens when the critic is wrong, and confidently approves a bad review? We have no metric anywhere in this build for "was this review actually helpful," only "did it get posted." And the <code>evaluate()</code> stub from Chapter 05 needs a real scoring function before Propose-Evaluate-Select means anything — where does that scoring function even come from? Session 5 gives these a name: RAGAS-style evaluation, LLM-as-judge, and the honest limits of both.
+    </div>
+  </div>
+
+  <div class="ch-nav">
+    <button class="ch-btn" onclick="goTo(7)"><small>← Previous</small> Build It + Quiz</button>
+    <div></div>
+  </div>
+</div>
+
+</main>
+
+<script>
+const chapters = document.querySelectorAll('.chapter');
+const navBtns = document.querySelectorAll('.nav-ch');
+let current = 0;
+
+function goTo(idx) {
+  chapters[current].classList.remove('active');
+  navBtns[current].classList.remove('active');
+  current = idx;
+  chapters[current].classList.add('active');
+  navBtns[current].classList.add('active');
+  window.scrollTo(0, 0);
+  document.getElementById('ch-counter').textContent = `${current + 1} / ${chapters.length}`;
+  document.getElementById('pf').style.width = `${((current + 1) / chapters.length) * 100}%`;
+}
+
+function switchTab(btn, panelId) {
+  const container = btn.closest('.tab-container');
+  container.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  container.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active');
+  const panel = document.getElementById('tab-' + panelId);
+  if (panel) panel.classList.add('active');
+}
+
+function toggleCollapse(header) {
+  header.classList.toggle('open');
+  header.nextElementSibling.classList.toggle('open');
+}
+
+function ans(btn, correct, explanation) {
+  const parent = btn.parentElement;
+  const feedbackEl = parent.nextElementSibling;
+  parent.querySelectorAll('.q-opt').forEach(b => {
+    b.style.pointerEvents = 'none';
+    b.style.opacity = '0.55';
+  });
+  btn.style.opacity = '1';
+  btn.classList.add(correct ? 'correct' : 'wrong');
+  feedbackEl.textContent = explanation;
+  feedbackEl.className = 'q-feedback show ' + (correct ? 'ok' : 'no');
+}
+</script>
+</body>
+</html>
