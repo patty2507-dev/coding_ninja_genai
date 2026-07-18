@@ -25,3 +25,23 @@ https://www.anthropic.com/engineering/building-effective-agents
 
 # Orignal paper for decay concept
 https://arxiv.org/pdf/2304.03442
+
+# For session 5 : multi-agent-research-system
+https://www.anthropic.com/engineering/multi-agent-research-system
+https://aimonk.com/agentic-ai-examples-enterprise-roi-case-studies/
+
+# good to understand enterprise architecture
+https://outshift.cisco.com/blog/ai-ml/jarvis-technical-deep-dive-multi-agent-design
+
+# Additional 
+https://wikidocs.net/267808 ( need to trasnlate in own lang)
+
+
+https://levelup.gitconnected.com/building-multi-agent-swarms-with-langgraph-and-aws-bedrock-8c9c2f9d5d71
+
+# dont skip below paper
+https://resources.anthropic.com/hubfs/Building%20Effective%20AI%20Agents-%20Architecture%20Patterns%20and%20Implementation%20Frameworks.pdf
+
+
+Full AI engineering paper
+https://arxiv.org/pdf/2606.24937
