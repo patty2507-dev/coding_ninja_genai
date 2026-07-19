@@ -1,0 +1,13 @@
+support_task:
+  description: >
+    Respond to the following customer inquiry: {customer_query}
+  expected_output: >
+    A detailed explanation of the return policy.
+  agent: customer_support_agent
+
+refund_task:
+  description: >
+    Respond to the following customer inquiry: {customer_query}
+  expected_output: >
+    A detailed explanation of the return policy.
+  agent: customer_support_agent
