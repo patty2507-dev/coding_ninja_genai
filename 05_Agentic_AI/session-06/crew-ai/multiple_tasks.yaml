@@ -1,0 +1,27 @@
+return_task:
+  description: >
+    Respond to the following customer inquiry: "I bought an item and I don't like it. I want to return it. What is your return policy for this case?"
+  expected_output: >
+    A detailed explanation of the return policy.
+  agent: customer_support_agent
+
+shipping_task:
+  description: >
+    Using the return policy details, provide the shipping policy for handling returns.
+  expected_output: >
+    A structured shipping policy with fields for shipping time, cost, and tracking information.
+  agent: customer_support_agent
+
+complaint_task:
+  description: >
+    Using the shipping policy and return policy details, provide a complaint resolution process for any issues with the return.
+  expected_output: >
+    A structured complaint resolution process with fields for acknowledgment, resolution steps, and escalation policy.
+  agent: customer_support_agent
+
+email_task:
+  description: >
+    Using the shipping policy, return policy, and complaint task details, write a formal email response to the user.
+  expected_output: >
+    A well-structured professional email responding to the users original support request.
+  agent: customer_support_agent
